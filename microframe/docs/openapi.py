@@ -13,10 +13,13 @@ from ..routing.models import RouteInfo
 class OpenAPIGenerator:
     """Generate OpenAPI 3.0 schema"""
     
-    def __init__(self, config: AppConfig):
-        self.config = config
+    def __init__(self, routes:list[RouteInfo], title:str, version:str, description:str):
+        self.routes = routes
+        self.title = title
+        self.version = version
+        self.description = description
     
-    def generate(self, routes: List[RouteInfo]) -> Dict[str, Any]:
+    def generate(self, ) -> Dict[str, Any]:
         """
         Generate complete OpenAPI schema
         
@@ -28,7 +31,7 @@ class OpenAPIGenerator:
         """
         paths = {}
         
-        for route_info in routes:
+        for route_info in self.routes:
             if not route_info.include_in_schema:
                 continue
             
@@ -43,9 +46,9 @@ class OpenAPIGenerator:
         return {
             "openapi": "3.0.2",
             "info": {
-                "title": self.config.title,
-                "version": self.config.version,
-                "description": self.config.description
+                "title": self.title,
+                "version": self.version,
+                "description": self.description
             },
             "paths": paths
         }
@@ -82,8 +85,8 @@ class OpenAPIGenerator:
     
     def _extract_parameters(
         self,
-        func: callable
-    ) -> Tuple[List[Dict], Dict[str, Any]]:
+        func: callable # type: ignore
+    ) -> Tuple[List[Dict], Dict[Any, Any]]:
         """Extract parameters and request body from function signature"""
         sig = inspect.signature(func)
         parameters = []

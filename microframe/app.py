@@ -1,7 +1,7 @@
 # microframework/app.py
 import inspect
 import logging
-from typing import Dict, List, Callable, Any
+from typing import Any, Dict, List, Callable, Optional, Literal
 from pydantic import ValidationError
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -9,372 +9,308 @@ from starlette.responses import JSONResponse, HTMLResponse
 from starlette.routing import Route
 from starlette.middleware import Middleware
 
-from .dependencies import AppException,RequestValidator
-from .dependencies import DependencyManager
-from .routing import  RouteInfo, Router as APIRouter
-
-# Configuration du logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-
+from .dependencies import AppException, RequestValidator, DependencyManager
+from .routing import RouteInfo, Router as APIRouter
+from .docs.ui import ReDocUI, SwaggerUI
+from .docs.openapi import OpenAPIGenerator
 
 
 
 class Application(Starlette):
-    """Application principale améliorée"""
-    
+    """Application principale (framework unifié et extensible)"""
+
     def __init__(
-        self, 
+        self,
         title: str = "MicroFramework",
         version: str = "1.0.0",
         description: str = "",
-        middleware: List[Middleware] = []
+        middleware: Optional[List[Middleware]] = None,
+        debug: bool = False,
     ):
-        # Initialisation des composants
+        # --- META ---
         self.title = title
         self.version = version
         self.description = description
-        self._routes_info: List = []
+        self.debug = debug
+
+        # --- COMPOSANTS PRINCIPAUX ---
+        self._routes_info: List[RouteInfo] = []
         self._dependency_manager = DependencyManager()
-        self._routers = []  # Liste des routers inclus
-        
-        # Initialisation Starlette avec middleware
+        self._routers: List[Dict[str, Any]] = []
+
+
+        # --- LOGGING ---
+        logging.basicConfig(
+            level=logging.DEBUG if debug else logging.INFO,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+        )
+        self.logger = logging.getLogger(self.title)
+
+        # --- INIT STARLETTE ---
         super().__init__(
             routes=[],
             middleware=middleware or [],
             exception_handlers={
                 AppException: self._app_exception_handler,
                 ValidationError: self._validation_exception_handler,
-                Exception: self._generic_exception_handler
-            } # pyright: ignore[reportArgumentType]
+                Exception: self._generic_exception_handler,
+            },
         )
-        
-        # Enregistrement des routes de documentation
-        self._register_docs()
-        
-        logger.info(f"Application '{title}' initialisée")
-    
+
+        # --- ROUTES INTERNES (DOCS + OPENAPI) ---
+        self._register_internal_routes()
+
+        self.logger.info(f"✅ Application '{self.title}' initialisée (v{self.version})")
+
+    # ============================================================
+    # === DÉCORATEURS ROUTES =====================================
+    # ============================================================
+
     def route(
-        self, 
-        path: str, 
-        methods: List[str] = [], 
-        tags: List[str] = []
+        self,
+        path: str,
+        methods: Optional[List[str]] = None,
+        tags: Optional[List[str]] = None,
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
+        response_model: Any = None,
+        status_code: int = 200,
+        deprecated: bool = False,
+        include_in_schema: bool = True,
     ):
         """Décorateur pour enregistrer une route"""
         if methods is None:
             methods = ["GET"]
-        
+        if tags is None:
+            tags = []
+
         def decorator(func: Callable):
-            route = self._build_route(path, func, methods, tags)
-            self.routes.append(route)
-            logger.info(f"Route enregistrée: {methods} {path}")
+            route_info = RouteInfo(
+                path=path,
+                func=func,
+                methods=methods,
+                tags=tags,
+                summary=summary,
+                description=description,
+                response_model=response_model,
+                status_code=status_code,
+                deprecated=deprecated,
+                include_in_schema=include_in_schema,
+            )
+
+            route = self._build_route(route_info)
+            self._add_route(route_info, route)
+            self.logger.debug(f"📡 Route enregistrée: {methods} {path}")
             return func
-        
+
         return decorator
-    
-    def dependency(self, name: str, cache: bool = False):
+
+    def get(self, path: str, **kwargs):
+        return self.route(path, methods=["GET"], **kwargs)
+
+    def post(self, path: str, **kwargs):
+        return self.route(path, methods=["POST"], **kwargs)
+
+    def put(self, path: str, **kwargs):
+        return self.route(path, methods=["PUT"], **kwargs)
+
+    def patch(self, path: str, **kwargs):
+        return self.route(path, methods=["PATCH"], **kwargs)
+
+    def delete(self, path: str, **kwargs):
+        return self.route(path, methods=["DELETE"], **kwargs)
+
+    # ============================================================
+    # === DÉPENDANCES ============================================
+    # ============================================================
+
+    def dependency(
+        self,
+        name: str = "",
+        cache: bool = False,
+        scope: Literal["app", "request"] = "request",
+    ):
         """Décorateur pour enregistrer une dépendance"""
         def decorator(func: Callable):
             dep_name = name or func.__name__
-            self._dependency_manager.register(dep_name, func, cache)
+            self._dependency_manager.register(dep_name, func, cache, scope)
+            self.logger.debug(f"🔗 Dépendance enregistrée: {dep_name} (scope={scope})")
             return func
+
         return decorator
-    
+
+    # ============================================================
+    # === ROUTERS ================================================
+    # ============================================================
+
     def include_router(
         self,
-        router: 'APIRouter',
+        router: APIRouter,
         prefix: str = "",
-        tags: List[str] = [],
-        dependencies: List[Any] = []
+        tags: Optional[List[str]] = None,
+        dependencies: Optional[List[Any]] = None,
     ):
-        """
-        Inclut un APIRouter dans l'application
-        
-        Exemple:
-            users_router = APIRouter(prefix="/users", tags=["Users"])
-            
-            @users_router.get("/")
-            async def list_users():
-                return {"users": []}
-            
-            app.include_router(users_router)
-        """
-        if APIRouter is None or not isinstance(router, type(router)):
-            raise ValueError("APIRouter must be imported from microframework.routing")
-        
-        # Combiner les préfixes
+        """Inclut un APIRouter complet"""
+        if not hasattr(router, "get_routes"):
+            raise ValueError("Objet fourni non valide: doit être un APIRouter")
+
         combined_prefix = prefix.rstrip("/")
-        
-        # Combiner les tags
-        combined_tags = tags or []
-        
-        # Ajouter toutes les routes du router
-        for route_info in router.get_routes():
-            # Ajuster le path avec le préfixe
-            full_path = route_info.path
-            if combined_prefix:
-                # Retirer le préfixe du router si présent
-                if router.prefix and route_info.path.startswith(router.prefix):
-                    path_without_router_prefix = route_info.path[len(router.prefix):]
-                else:
-                    path_without_router_prefix = route_info.path
-                
-                full_path = f"{combined_prefix}{path_without_router_prefix}"
-            
-            # Combiner les tags
-            all_tags = list(set(combined_tags + route_info.tags))
-            route_info.tags = all_tags
-            route_info.path = full_path
-            
-            # Construire la route Starlette
-            starlette_route = self._build_route(
-                full_path,
-                route_info.func,
-                route_info.methods,
-                all_tags
+        router_routes = router.get_routes()
+        self._routers.append(router)
+
+        self.logger.info(
+            f"🧩 Inclusion router: {len(router_routes)} routes (prefix='{combined_prefix or '/'}')"
+        )
+
+        for r in router_routes:
+            full_path = f"{combined_prefix}{r.path}"
+            all_tags = list(set((tags or []) + r.tags))
+
+            route_info = RouteInfo(
+                path=full_path,
+                func=r.func,
+                methods=r.methods,
+                tags=all_tags,
+                summary=r.summary,
+                description=r.description,
+                response_model=r.response_model,
+                status_code=r.status_code,
+                deprecated=r.deprecated,
+                include_in_schema=r.include_in_schema,
             )
-            
-            # Ajouter la route
-            self.routes.append(starlette_route)
-            self._routes_info.append(route_info)
-        
-        logger.info(f"Router inclus avec {len(router.get_routes())} routes")
-    
-    def get(self, path: str, **kwargs):
-        """Décorateur pour route GET"""
-        return self.route(path, methods=["GET"], **kwargs)
-    
-    def post(self, path: str, **kwargs):
-        """Décorateur pour route POST"""
-        return self.route(path, methods=["POST"], **kwargs)
-    
-    def put(self, path: str, **kwargs):
-        """Décorateur pour route PUT"""
-        return self.route(path, methods=["PUT"], **kwargs)
-    
-    def patch(self, path: str, **kwargs):
-        """Décorateur pour route PATCH"""
-        return self.route(path, methods=["PATCH"], **kwargs)
-    
-    def delete(self, path: str, **kwargs):
-        """Décorateur pour route DELETE"""
-        return self.route(path, methods=["DELETE"], **kwargs)
-    
-    def _build_route(
-        self, 
-        path: str, 
-        func: Callable, 
-        methods: List[str],
-        tags: List[str] = []
-    ) -> Route:
+            route = self._build_route(route_info)
+            self._add_route(route_info, route)
+
+        self.logger.info(f"✅ Router inclus: {len(router_routes)} routes ajoutées")
+
+    # ============================================================
+    # === ROUTES MANAGEMENT ======================================
+    # ============================================================
+
+    def _add_route(self, info: RouteInfo, route: Route):
+        """Ajoute une route dans Starlette et le registre interne"""
+        self.routes.append(route)
+        self._routes_info.append(info)
+
+    def _build_route(self, info: RouteInfo) -> Route:
         """Construit une route Starlette"""
-        route_info = RouteInfo(path, func, methods, tags)
-        self._routes_info.append(route_info)
-        
         async def endpoint(request: Request):
             try:
-                # Validation des paramètres
-                params = await RequestValidator.parse_request(request, func)
-                
-                # Résolution des dépendances
-                deps = await self._dependency_manager.resolve(func)
-                
-                # Exécution de la fonction
-                result = await self._call_endpoint(func, {**params, **deps})
-                
-                # Retour de la réponse
+                params = await RequestValidator.parse_request(request, info.func)
+                deps = await self._dependency_manager.resolve(info.func, request)
+                result = await self._call_endpoint(info.func, {**params, **deps})
+
                 if isinstance(result, (JSONResponse, HTMLResponse)):
                     return result
-                
                 return JSONResponse(result)
-                
+
             except AppException as e:
-                return JSONResponse(
-                    {"error": e.message, "details": e.details},
-                    status_code=e.status_code
-                )
+                return JSONResponse({"error": e.message, "details": e.details}, status_code=e.status_code)
             except Exception as e:
-                logger.error(f"Erreur dans {path}: {e}", exc_info=True)
-                return JSONResponse(
-                    {"error": "Internal server error"},
-                    status_code=500
-                )
-        
-        return Route(path, endpoint=endpoint, methods=methods)
-    
+                self.logger.error(f"Erreur route {info.path}: {e}", exc_info=True)
+                return JSONResponse({"error": "Internal server error"}, status_code=500)
+
+        return Route(info.path, endpoint=endpoint, methods=info.methods)
+
     async def _call_endpoint(self, func: Callable, kwargs: Dict):
-        """Appelle un endpoint (sync ou async)"""
+        """Exécute un endpoint (sync/async)"""
         if inspect.iscoroutinefunction(func):
             return await func(**kwargs)
         return func(**kwargs)
-    
-    # Gestion des exceptions
+
+    # ============================================================
+    # === GESTION DES EXCEPTIONS ================================
+    # ============================================================
+
     async def _app_exception_handler(self, request: Request, exc: AppException):
-        return JSONResponse(
-            {"error": exc.message, "details": exc.details},
-            status_code=exc.status_code
-        )
-    
+        return JSONResponse({"error": exc.message, "details": exc.details}, status_code=exc.status_code)
+
     async def _validation_exception_handler(self, request: Request, exc: ValidationError):
-        return JSONResponse(
-            {"error": "Validation error", "details": exc.errors()},
-            status_code=422
-        )
-    
+        return JSONResponse({"error": "Validation error", "details": exc.errors()}, status_code=422)
+
     async def _generic_exception_handler(self, request: Request, exc: Exception):
-        logger.error(f"Erreur non gérée: {exc}", exc_info=True)
-        return JSONResponse(
-            {"error": "Internal server error"},
-            status_code=500
-        )
-    
-    # Documentation OpenAPI
-    def _register_docs(self):
-        """Enregistre les routes de documentation"""
+        self.logger.error(f"Erreur non gérée: {exc}", exc_info=True)
+        return JSONResponse({"error": "Internal server error"}, status_code=500)
+
+    # ============================================================
+    # === DOCS & OPENAPI ========================================
+    # ============================================================
+
+    def _register_internal_routes(self):
+        """Définit les routes internes (/docs, /openapi.json, /redoc)"""
         async def openapi(request: Request):
-            schema = self._generate_openapi()
-            return JSONResponse(schema)
-        
+            openapi = OpenAPIGenerator(routes=self._routes_info, title=self.title,version=self.version,description= self.description)
+
+            return JSONResponse(openapi.generate())
+
+
+
         async def docs(request: Request):
-            html = self._swagger_ui_html()
-            return HTMLResponse(html)
-        
+            return SwaggerUI(title=self.title)()
+
         async def redoc(request: Request):
-            html = self._redoc_html()
-            return HTMLResponse(html)
-        
-        self.routes.append(Route("/openapi.json", endpoint=openapi, methods=["GET"]))
-        self.routes.append(Route("/docs", endpoint=docs, methods=["GET"]))
-        self.routes.append(Route("/redoc", endpoint=redoc, methods=["GET"]))
-    
+            return ReDocUI(title=self.title)()
+
+        internal_routes = [
+            Route("/openapi.json", endpoint=openapi, methods=["GET"]),
+            Route("/docs", endpoint=docs, methods=["GET"]),
+            Route("/redoc", endpoint=redoc, methods=["GET"]),
+        ]
+        self.routes.extend(internal_routes)
+        self.logger.debug("📚 Routes internes (docs/openapi/redoc) enregistrées")
+
     def _generate_openapi(self) -> Dict:
-        """Génère le schéma OpenAPI"""
-        paths = {}
-        
+        paths: Dict[str, Any] = {}
+
         for info in self._routes_info:
-            path_item = {}
-            
+            if not info.include_in_schema:
+                continue
+
+            if info.path not in paths:
+                paths[info.path] = {}
+
             for method in info.methods:
-                method_lower = method.lower()
-                params, request_body = self._extract_schema(info.func)
-                
-                path_item[method_lower] = {
-                    "summary": info.func.__name__,
-                    "description": info.func.__doc__ or "",
+                params, body = self._extract_schema(info.func)
+                paths[info.path][method.lower()] = {
+                    "summary": info.summary,
+                    "description": info.description,
                     "tags": info.tags,
                     "parameters": params,
-                    "requestBody": request_body,
+                    "requestBody": body,
                     "responses": {
                         "200": {"description": "Successful Response"},
                         "422": {"description": "Validation Error"},
-                        "500": {"description": "Internal Server Error"}
-                    }
+                        "500": {"description": "Internal Server Error"},
+                    },
                 }
-            
-            paths[info.path] = path_item
-        
+
         return {
             "openapi": "3.0.2",
-            "info": {
-                "title": self.title,
-                "version": self.version,
-                "description": self.description
-            },
-            "paths": paths
+            "info": {"title": self.title, "version": self.version, "description": self.description},
+            "paths": paths,
         }
-    
+
     def _extract_schema(self, func: Callable):
-        """Extrait le schéma OpenAPI d'une fonction"""
         sig = inspect.signature(func)
         params = []
         request_body = None
-        
-        for param_name, param in sig.parameters.items():
+
+        for name, param in sig.parameters.items():
             ann = param.annotation
-            
+
             if RequestValidator._is_pydantic_model(ann):
                 schema = ann.model_json_schema()
                 request_body = {
                     "required": True,
-                    "content": {
-                        "application/json": {
-                            "schema": schema
-                        }
-                    }
+                    "content": {"application/json": {"schema": schema}},
                 }
-            elif param_name not in ["request"] and param_name not in self._dependency_manager._dependencies:
+            elif name not in ["request"]:
                 params.append({
-                    "name": param_name,
+                    "name": name,
                     "in": "query",
                     "required": param.default == inspect.Parameter.empty,
-                    "schema": {"type": "string"}
+                    "schema": {"type": "string"},
                 })
-        
+
         return params, request_body
-    
-    def _swagger_ui_html(self) -> str:
-        """Génère le HTML pour Swagger UI"""
-        return f"""
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>{self.title} - Documentation</title>
-            <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.10.5/swagger-ui.min.css" />
-            <style>
-                body {{
-                    margin: 0;
-                    padding: 0;
-                }}
-            </style>
-        </head>
-        <body>
-            <div id="swagger-ui"></div>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.10.5/swagger-ui-bundle.min.js" crossorigin></script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.10.5/swagger-ui-standalone-preset.min.js" crossorigin></script>
-            <script>
-                window.onload = function() {{
-                    const ui = SwaggerUIBundle({{
-                        url: '/openapi.json',
-                        dom_id: '#swagger-ui',
-                        deepLinking: true,
-                        presets: [
-                            SwaggerUIBundle.presets.apis,
-                            SwaggerUIStandalonePreset
-                        ],
-                        layout: "StandaloneLayout"
-                    }});
-                    window.ui = ui;
-                }};
-            </script>
-        </body>
-        </html>
-        """
-    
-    def _redoc_html(self) -> str:
-        """Génère le HTML pour ReDoc (alternative à Swagger)"""
-        return f"""
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>{self.title} - ReDoc</title>
-            <style>
-                body {{
-                    margin: 0;
-                    padding: 0;
-                }}
-            </style>
-        </head>
-        <body>
-            <redoc spec-url='/openapi.json'></redoc>
-            <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
-        </body>
-        </html>
-        """
+

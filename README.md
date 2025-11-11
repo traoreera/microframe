@@ -20,7 +20,14 @@
 ```bash
 git clone https://github.com/votre-username/microframework.git
 cd microframework
-pip install -e .
+pip install -e . 
+#or
+poetry init 
+poetry add git+https://github.com/traoreera/microframe.git
+#or
+python -m venv .env
+source .env/bin/activate
+pip install git+https://github.com/traoreera/microframe.git
 ```
 
 ## 🚀 Démarrage rapide

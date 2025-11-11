@@ -36,4 +36,4 @@ clean:
 	rm -rf build dist .pytest_cache .coverage htmlcov
 
 run:
-	uvicorn main:app --reload --host 0.0.0.0 --port 8000
+	poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000

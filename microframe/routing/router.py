@@ -1,9 +1,37 @@
 """
-Router for organizing routes
+Router for organizing routes - VERSION CORRIGÉE
 """
 from typing import Any, Callable, Dict, List, Optional
+from ..validation.parser import RequestParser
 
-from .models import RouteInfo
+
+
+class RouteInfo:
+    """Information sur une route"""
+    
+    def __init__(
+        self,
+        path: str,
+        func: Callable,
+        methods: List[str],
+        tags: List[str] = None,
+        summary: str = None,
+        description: str = None,
+        response_model: Any = None,
+        status_code: int = 200,
+        deprecated: bool = False,
+        include_in_schema: bool = True,
+    ):
+        self.path = path
+        self.func = func
+        self.methods = methods
+        self.tags = tags or []
+        self.summary = summary or func.__name__
+        self.description = description or (func.__doc__ or "").strip()
+        self.response_model = response_model
+        self.status_code = status_code
+        self.deprecated = deprecated
+        self.include_in_schema = include_in_schema
 
 
 class Router:
@@ -41,6 +69,13 @@ class Router:
         path: str,
         func: Callable,
         methods: Optional[List[str]] = None,
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
+        response_model: Any = None,
+        status_code: int = 200,
+        tags: Optional[List[str]] = None,
+        deprecated: bool = False,
+        include_in_schema: bool = True,
         **kwargs
     ) -> Callable:
         """Add a route to the router"""
@@ -51,16 +86,21 @@ class Router:
         full_path = f"{self.prefix}{path}"
         
         # Merge tags
-        route_tags = kwargs.get("tags", [])
+        route_tags = tags or []
         all_tags = list(set(self.tags + route_tags))
-        kwargs["tags"] = all_tags
         
         # Create route info
         route_info = RouteInfo(
             path=full_path,
             func=func,
             methods=methods,
-            **kwargs
+            tags=all_tags,
+            summary=summary or func.__name__,
+            description=description or (func.__doc__ or "").strip(),
+            response_model=response_model,
+            status_code=status_code,
+            deprecated=deprecated or self.deprecated,
+            include_in_schema=include_in_schema and self.include_in_schema
         )
         
         self._routes.append(route_info)
