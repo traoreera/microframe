@@ -1,66 +1,62 @@
 # microframework/app.py
 import inspect
 import logging
-from typing import Any, Dict, List, Callable, Optional, Literal
+from typing import Any, Callable, Dict, List, Literal, Optional
+
 from pydantic import ValidationError
 from starlette.applications import Starlette
-from starlette.requests import Request
-from starlette.responses import JSONResponse, HTMLResponse
-from starlette.routing import Route
 from starlette.middleware import Middleware
+from starlette.requests import Request
+from starlette.responses import HTMLResponse, JSONResponse
+from starlette.routing import Route
 
-from ..dependencies import AppException, RequestValidator, DependencyManager
-from ..routing import RouteInfo, Router as APIRouter
-from ..docs.ui import ReDocUI, SwaggerUI
-from ..docs.openapi import OpenAPIGenerator
+from microframe.dependencies.exceptionHandler import Depends
+from microframe.utils.logger import log_execution
 
+from ..dependencies import AppException, DependencyManager
+from ..docs import OpenAPIGenerator, ReDocUI, SwaggerUI
+from ..routing import RouteInfo
+from ..routing import Router as APIRouter
+from ..validation import RequestParser
+from .config import AppConfig
 
 
 class Application(Starlette):
     """Application principale (framework unifié et extensible)"""
 
-    def __init__(
-        self,
-        title: str = "MicroFramework",
-        version: str = "1.0.0",
-        description: str = "",
-        middleware: Optional[List[Middleware]] = None,
-        debug: bool = False,
-    ):
+    def __init__(self, configuration: AppConfig = AppConfig()):
         # --- META ---
-        self.title = title
-        self.version = version
-        self.description = description
-        self.debug = debug
+        self.config = configuration
 
         # --- COMPOSANTS PRINCIPAUX ---
         self._routes_info: List[RouteInfo] = []
         self._dependency_manager = DependencyManager()
         self._routers: List[Dict[str, Any]] = []
 
-
         # --- LOGGING ---
         logging.basicConfig(
-            level=logging.DEBUG if debug else logging.INFO,
+            level=logging.DEBUG if self.config.debug else logging.INFO,
             format="%(asctime)s - %(levelname)s - %(message)s",
         )
-        self.logger = logging.getLogger(self.title)
+        self.logger = logging.getLogger(self.config.title)
 
         # --- INIT STARLETTE ---
         super().__init__(
             routes=[],
-            middleware=middleware or [],
+            middleware=self.config.middleware or [],
             exception_handlers={
                 AppException: self._app_exception_handler,
                 ValidationError: self._validation_exception_handler,
                 Exception: self._generic_exception_handler,
-            },
+            },  # type: ignore
         )
 
         # --- ROUTES INTERNES (DOCS + OPENAPI) ---
         self._register_internal_routes()
 
-        self.logger.info(f"✅ Application '{self.title}' initialisée (v{self.version})")
+        self.logger.info(
+            f"✅ Application '{self.config.title}' initialisée (v{self.config.version})"
+        )
 
     # ============================================================
     # === DÉCORATEURS ROUTES =====================================
@@ -131,9 +127,10 @@ class Application(Starlette):
         scope: Literal["app", "request"] = "request",
     ):
         """Décorateur pour enregistrer une dépendance"""
+
         def decorator(func: Callable):
             dep_name = name or func.__name__
-            self._dependency_manager.register(dep_name, func, cache, scope)
+            self._dependency_manager.register(dep_name, func, cache)
             self.logger.debug(f"🔗 Dépendance enregistrée: {dep_name} (scope={scope})")
             return func
 
@@ -194,18 +191,21 @@ class Application(Starlette):
 
     def _build_route(self, info: RouteInfo) -> Route:
         """Construit une route Starlette"""
+
         async def endpoint(request: Request):
             try:
-                params = await RequestValidator.parse_request(request, info.func)
+                params = await RequestParser().parse(request, info.func)
                 deps = await self._dependency_manager.resolve(info.func, request)
-                result = await self._call_endpoint(info.func, {**params, **deps})
-
+                all_kwargs = {**params, **deps}
+                result = await self._call_endpoint(info.func, all_kwargs)
                 if isinstance(result, (JSONResponse, HTMLResponse)):
                     return result
                 return JSONResponse(result)
 
             except AppException as e:
-                return JSONResponse({"error": e.message, "details": e.details}, status_code=e.status_code)
+                return JSONResponse(
+                    {"error": e.message, "details": e.details}, status_code=e.status_code
+                )
             except Exception as e:
                 self.logger.error(f"Erreur route {info.path}: {e}", exc_info=True)
                 return JSONResponse({"error": "Internal server error"}, status_code=500)
@@ -223,7 +223,9 @@ class Application(Starlette):
     # ============================================================
 
     async def _app_exception_handler(self, request: Request, exc: AppException):
-        return JSONResponse({"error": exc.message, "details": exc.details}, status_code=exc.status_code)
+        return JSONResponse(
+            {"error": exc.message, "details": exc.details}, status_code=exc.status_code
+        )
 
     async def _validation_exception_handler(self, request: Request, exc: ValidationError):
         return JSONResponse({"error": "Validation error", "details": exc.errors()}, status_code=422)
@@ -238,23 +240,27 @@ class Application(Starlette):
 
     def _register_internal_routes(self):
         """Définit les routes internes (/docs, /openapi.json, /redoc)"""
+
         async def openapi(request: Request):
-            openapi = OpenAPIGenerator(routes=self._routes_info, title=self.title,version=self.version,description= self.description)
+            openapi = OpenAPIGenerator(
+                routes=self._routes_info,
+                title=self.config.title,
+                version=self.config.version,
+                description=self.config.description,
+            )
 
             return JSONResponse(openapi.generate())
 
-
-
         async def docs(request: Request):
-            return SwaggerUI(title=self.title)()
+            return SwaggerUI(title=self.config.title)()
 
         async def redoc(request: Request):
-            return ReDocUI(title=self.title)()
+            return ReDocUI(title=self.config.title)()
 
         internal_routes = [
             Route("/openapi.json", endpoint=openapi, methods=["GET"]),
-            Route("/docs", endpoint=docs, methods=["GET"]),
-            Route("/redoc", endpoint=redoc, methods=["GET"]),
+            Route("/"+self.config.docs_url if not self.config.docs_url.startswith("/") else self.config.docs_url, endpoint=docs, methods=["GET"]),
+            Route("/"+self.config.redoc_url if not self.config.redoc_url.startswith("/") else self.config.redoc_url, endpoint=redoc, methods=["GET"]),
         ]
         self.routes.extend(internal_routes)
         self.logger.debug("📚 Routes internes (docs/openapi/redoc) enregistrées")
@@ -271,6 +277,7 @@ class Application(Starlette):
 
             for method in info.methods:
                 params, body = self._extract_schema(info.func)
+
                 paths[info.path][method.lower()] = {
                     "summary": info.summary,
                     "description": info.description,
@@ -286,7 +293,11 @@ class Application(Starlette):
 
         return {
             "openapi": "3.0.2",
-            "info": {"title": self.title, "version": self.version, "description": self.description},
+            "info": {
+                "title": self.config.title,
+                "version": self.config.version,
+                "description": self.description,
+            },
             "paths": paths,
         }
 
@@ -298,19 +309,22 @@ class Application(Starlette):
         for name, param in sig.parameters.items():
             ann = param.annotation
 
-            if RequestValidator._is_pydantic_model(ann):
+            if RequestParser()._is_pydantic_model(ann):
                 schema = ann.model_json_schema()
                 request_body = {
                     "required": True,
                     "content": {"application/json": {"schema": schema}},
                 }
             elif name not in ["request"]:
-                params.append({
-                    "name": name,
-                    "in": "query",
-                    "required": param.default == inspect.Parameter.empty,
-                    "schema": {"type": "string"},
-                })
+                if name in ["self", "cls", "db"]:
+                    continue
+                params.append(
+                    {
+                        "name": name,
+                        "in": "query",
+                        "required": param.default == inspect.Parameter.empty,
+                        "schema": {"type": "string"},
+                    }
+                )
 
         return params, request_body
-

@@ -10,9 +10,6 @@ microframe/
 │   ├── config.py               → Configuration centralisée (51 lignes)
 │   └── exceptions.py           → Exceptions typées (70 lignes)
 │
-├── 📁 http/                    → Gestion HTTP
-│   └── handlers.py             → Gestionnaires requêtes/exceptions (102 lignes)
-│
 ├── 📁 routing/                 → Système de routing
 │   ├── router.py               → Router principal (184 lignes)
 │   ├── models.py               → RouteInfo et modèles (56 lignes)

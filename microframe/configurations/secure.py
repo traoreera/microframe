@@ -25,7 +25,7 @@ class Secure(BaseCfg):
             },
             "dotenv": "./security/.env",
         }
-        if isinstance(self.conf, Configure) and self.conf is not None:
+        if self.conf is not None:
             self.custom_config: SecureTypes = self.conf
         else:
             self.custom_config = self.default_migration

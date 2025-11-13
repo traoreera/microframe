@@ -46,7 +46,6 @@ microframe/
 
 Chaque module a une responsabilité claire:
 - **core**: Logique centrale de l'application
-- **http**: Gestion des requêtes/réponses HTTP
 - **routing**: Organisation des routes
 - **dependencies**: Injection de dépendances
 - **validation**: Validation des données
@@ -100,12 +99,8 @@ L'architecture permet d'ajouter facilement:
 ### Application simple
 
 ```python
-from microframe import Application
-
-app = Application(
-    title="My API",
-    version="1.0.0"
-)
+from microframe import Application, AppConfig
+app = Application(configuration = AppConfig())
 
 @app.get("/")
 async def index():
@@ -134,6 +129,7 @@ app = Application()
 api_router = Router(prefix="/api/v1")
 api_router.include_router(users_router)
 api_router.include_router(items_router)
+
 app.include_router(api_router)
 ```
 
@@ -143,7 +139,7 @@ app.include_router(api_router)
 from microframe import Application, Depends
 
 def get_db():
-    return Database()
+    return Database() # not generator #yield
 
 @app.get("/users")
 async def list_users(db=Depends(get_db)):

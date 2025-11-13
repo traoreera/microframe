@@ -1,23 +1,22 @@
 """
 Documentation UI generators
 """
-from typing import Any
-from starlette.responses import HTMLResponse
 
-from ..core.config import AppConfig
+from starlette.responses import HTMLResponse
 
 
 class SwaggerUI:
     """Swagger UI generator"""
-    
-    def __init__(self, title:str):
+
+    def __init__(self, title: str):
         self.title = title
 
-    
-    def __call__(self,) -> HTMLResponse:
-        
+    def __call__(
+        self,
+    ) -> HTMLResponse:
+
         return HTMLResponse(
-            content= f"""
+            content=f"""
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -43,14 +42,15 @@ class SwaggerUI:
         """
         )
 
+
 class ReDocUI:
     """ReDoc UI generator"""
-    
+
     def __init__(self, title):
-        
+
         self.title = title
-    
-    def __call__(self)->HTMLResponse:
+
+    def __call__(self) -> HTMLResponse:
 
         return HTMLResponse(
             content=f"""
@@ -66,5 +66,4 @@ class ReDocUI:
             <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
         </body>
         </html"""
-
         )

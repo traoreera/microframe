@@ -121,7 +121,8 @@
         ],
         "requirements": [
             "config.json",
-            "config.py"
+            "config.py",
+            "requirements.txt"
         ],
         "middleware": {
             "ACCESS_RULES": {

@@ -1,7 +1,8 @@
 """
 Middleware module
 """
+
 from .cors import CORSMiddleware
-from .security_middleware import SecurityMiddleware, RateLimiter
+from .security_middleware import RateLimiter, SecurityMiddleware
 
 __all__ = ["CORSMiddleware", "SecurityMiddleware", "RateLimiter"]

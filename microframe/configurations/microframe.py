@@ -41,8 +41,8 @@ class Xcorecfg(BaseCfg):
             "requirements": ["config.json", "config.py"],
         }
 
-        if isinstance(self.conf, Configure) and self.conf is not None:
-            self.custom_config: Xcore = self.conf
+        if self.conf is not None:
+            self.custom_config: Xcore = self.conf # type: ignore
         else:
             self.custom_config = self.default_migration
 

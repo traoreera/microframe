@@ -91,12 +91,10 @@ app = Application(
 
 ### Après (v2.0) - Option 1 (Simple)
 ```python
-from microframe import Application
+from microframe import Application,AppConfig
 
 app = Application(
-    title="My API",
-    version="1.0.0",
-    description="My description"
+    cofiguration = AppConfig()
 )
 ```
 

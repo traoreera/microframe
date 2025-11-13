@@ -1,6 +1,7 @@
 """
 Routing models and data structures
 """
+
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
@@ -9,7 +10,7 @@ from typing import Any, Callable, Dict, List, Optional
 class RouteInfo:
     """
     Information about a route
-    
+
     Attributes:
         path: URL path pattern
         func: Handler function
@@ -22,7 +23,7 @@ class RouteInfo:
         deprecated: Whether route is deprecated
         include_in_schema: Include in OpenAPI docs
     """
-    
+
     path: str
     func: Callable
     methods: List[str]
@@ -34,15 +35,15 @@ class RouteInfo:
     deprecated: bool = False
     include_in_schema: bool = True
     dependencies: List[Any] = field(default_factory=list)
-    
+
     def __post_init__(self):
         """Post initialization processing"""
         if self.summary is None:
             self.summary = self.func.__name__.replace("_", " ").title()
-        
+
         if self.description is None and self.func.__doc__:
             self.description = self.func.__doc__.strip()
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary"""
         return {
@@ -52,5 +53,5 @@ class RouteInfo:
             "summary": self.summary,
             "description": self.description,
             "status_code": self.status_code,
-            "deprecated": self.deprecated
+            "deprecated": self.deprecated,
         }

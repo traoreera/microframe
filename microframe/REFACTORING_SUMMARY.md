@@ -8,7 +8,6 @@ Le code a été entièrement restructuré en modules indépendants avec séparat
 ```
 microframe/
 ├── core/           → Logique centrale (Application, Config, Exceptions)
-├── http/           → Gestion HTTP (Handlers, Responses)
 ├── routing/        → Système de routing (Router, Registry, Models)
 ├── dependencies/   → Injection de dépendances (Manager, Depends)
 ├── validation/     → Validation des requêtes (Parser)

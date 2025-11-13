@@ -15,18 +15,18 @@ Example:
 __version__ = "2.0.0"
 
 from .core import (
-    Application,
     AppConfig,
-    MicroFrameException,
+    Application,
+    ForbiddenException,
     HTTPException,
-    ValidationException,
+    MicroFrameException,
     NotFoundException,
     UnauthorizedException,
-    ForbiddenException
+    ValidationException,
 )
-from .routing import Router
 from .dependencies import Depends
 from .middleware import CORSMiddleware, SecurityMiddleware
+from .routing import Router
 
 __all__ = [
     "Application",
@@ -40,5 +40,5 @@ __all__ = [
     "ValidationException",
     "NotFoundException",
     "UnauthorizedException",
-    "ForbiddenException"
+    "ForbiddenException",
 ]

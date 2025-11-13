@@ -78,7 +78,7 @@ class ManagerCfg(BaseCfg):
             },
         }
 
-        if isinstance(self.conf, Configure) and self.conf is not None:
+        if self.conf is not None:
             self.custom_config: ManagerType = self.conf
 
         else:

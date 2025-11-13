@@ -1,17 +1,20 @@
 """
 Example application using the new modular architecture
 """
-from pydantic import BaseModel, Field
-from microframe import Application, Router, Depends
-from microframe.middleware import CORSMiddleware, SecurityMiddleware
 
+from pydantic import BaseModel, Field
+
+from microframe import Application, Depends, Router
+from microframe.middleware import CORSMiddleware, SecurityMiddleware
 
 # =====================================================
 # Models
 # =====================================================
 
+
 class User(BaseModel):
     """User model"""
+
     name: str = Field(..., min_length=2, max_length=50)
     email: str
     age: int = Field(..., ge=0, le=150)
@@ -19,6 +22,7 @@ class User(BaseModel):
 
 class Item(BaseModel):
     """Item model"""
+
     title: str
     description: str = None
     price: float = Field(..., gt=0)
@@ -27,6 +31,7 @@ class Item(BaseModel):
 # =====================================================
 # Dependencies
 # =====================================================
+
 
 def get_database():
     """Simulate database connection"""
@@ -49,13 +54,7 @@ users_router = Router(prefix="/users", tags=["Users"])
 @users_router.get("/")
 async def list_users(db=Depends(get_database)):
     """List all users"""
-    return {
-        "users": [
-            {"id": 1, "name": "Alice"},
-            {"id": 2, "name": "Bob"}
-        ],
-        "database": db
-    }
+    return {"users": [{"id": 1, "name": "Alice"}, {"id": 2, "name": "Bob"}], "database": db}
 
 
 @users_router.get("/{user_id}")
@@ -80,7 +79,7 @@ async def list_items():
     return {
         "items": [
             {"id": 1, "title": "Item 1", "price": 10.99},
-            {"id": 2, "title": "Item 2", "price": 20.99}
+            {"id": 2, "title": "Item 2", "price": 20.99},
         ]
     }
 
@@ -98,11 +97,7 @@ admin_router = Router(prefix="/admin", tags=["Admin"])
 @admin_router.get("/stats")
 async def get_stats(current_user=Depends(get_current_user)):
     """Get admin statistics"""
-    return {
-        "total_users": 100,
-        "total_items": 250,
-        "admin": current_user
-    }
+    return {"total_users": 100, "total_items": 250, "admin": current_user}
 
 
 # =====================================================
@@ -113,7 +108,7 @@ app = Application(
     title="Example API",
     version="2.0.0",
     description="Example application using the new modular architecture",
-    debug=True
+    debug=True,
 )
 
 # Add middlewares
@@ -121,14 +116,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
     allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
-app.add_middleware(
-    SecurityMiddleware,
-    rate_limit_requests=100,
-    rate_limit_window=60
-)
+app.add_middleware(SecurityMiddleware, rate_limit_requests=100, rate_limit_window=60)
 
 # Include routers
 api_router = Router(prefix="/api/v1", tags=["API v1"])
@@ -139,14 +130,12 @@ api_router.include_router(admin_router)
 app.include_router(api_router)
 
 # Direct routes
+
+
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {
-        "message": "Welcome to the API",
-        "version": "2.0.0",
-        "docs": "/docs"
-    }
+    return {"message": "Welcome to the API", "version": "2.0.0", "docs": "/docs"}
 
 
 @app.get("/health")
@@ -161,10 +150,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000,
-        reload=True
-    )
+
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
