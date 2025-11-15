@@ -24,7 +24,6 @@ class HTTPException(MicroFrameException):
     """HTTP specific exception"""
 
 
-
 class ValidationException(MicroFrameException):
     """Validation error exception"""
 

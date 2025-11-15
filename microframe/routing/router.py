@@ -2,7 +2,10 @@
 Router for organizing routes - VERSION CORRIGÉE
 """
 
-from typing import Any, Callable, List, Optional
+from typing import Any, Awaitable, Callable, List, Optional
+
+from starlette.routing import WebSocketRoute
+from starlette.websockets import WebSocket, WebSocketClose
 
 from ..validation.parser import RequestParser
 
@@ -62,7 +65,7 @@ class Router:
         self.dependencies = dependencies or []
         self.deprecated = deprecated
         self.include_in_schema = include_in_schema
-        self._routes: List[RouteInfo] = []
+        self._routes: List[RouteInfo | WebSocketRoute] = []
         self._routers: List[tuple] = []  # (router, prefix, tags)
 
     def add_route(
@@ -163,6 +166,14 @@ class Router:
 
         return decorator
 
+    def websocket(self, path: str, **kwargs) -> Callable:
+        """WebSocket route decorator"""
+
+        def decorator(func: Callable) -> Callable:
+            return self.add_route(path, func, methods=["GET"], **kwargs)
+
+        return decorator
+
     def route(self, path: str, methods: Optional[List[str]] = None, **kwargs) -> Callable:
         """Generic route decorator"""
 
@@ -222,3 +233,11 @@ class Router:
             all_routes.extend(nested_routes)
 
         return all_routes
+
+    def ws(
+        self,
+        path: str,
+        endpoint: Callable[[WebSocket], Awaitable[None]],
+        name: str | None = None,
+    ):  # pragma: no cover
+        WebSocketRoute(path, endpoint=endpoint, name=name)

@@ -18,7 +18,7 @@
 ## 📦 Installation rapide
 
 ```bash
-git clone https://github.com/votre-username/microframework.git
+git clone https://github.com/traoreera/microframe.git
 cd microframework
 pip install -e . 
 #or
@@ -301,8 +301,8 @@ MIT License - voir [LICENSE](LICENSE)
 
 ## 📞 Contact
 
-- GitHub: [@votre-username](https://github.com/votre-username)
-- Documentation: [microframework.dev](https://microframework.dev)
+- GitHub: [@traoreera](https://github.com/traoreera)
+- Documentation: [microframe.dev](https://microframe.dev)
 
 ---
 

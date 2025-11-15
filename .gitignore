@@ -62,4 +62,4 @@ Thumbs.db
 
 #other
 .ecommerce/
-*.html
+templates/

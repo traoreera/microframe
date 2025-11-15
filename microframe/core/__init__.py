@@ -1,5 +1,6 @@
 """
-Core module
+MicroFrame core module.
+It's  use 
 """
 
 from .application import Application

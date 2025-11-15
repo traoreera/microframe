@@ -5,13 +5,17 @@ from typing import Any, Callable, Dict, List, Literal, Optional
 
 from pydantic import ValidationError
 from starlette.applications import Starlette
-from starlette.middleware import Middleware
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse
+from starlette.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    PlainTextResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
 from starlette.routing import Route
-
-from microframe.dependencies.exceptionHandler import Depends
-from microframe.utils.logger import log_execution
 
 from ..dependencies import AppException, DependencyManager
 from ..docs import OpenAPIGenerator, ReDocUI, SwaggerUI
@@ -145,7 +149,6 @@ class Application(Starlette):
         router: APIRouter,
         prefix: str = "",
         tags: Optional[List[str]] = None,
-        dependencies: Optional[List[Any]] = None,
     ):
         """Inclut un APIRouter complet"""
         if not hasattr(router, "get_routes"):
@@ -153,7 +156,7 @@ class Application(Starlette):
 
         combined_prefix = prefix.rstrip("/")
         router_routes = router.get_routes()
-        self._routers.append(router)
+        self._routers.append(router)  # type: ignore
 
         self.logger.info(
             f"🧩 Inclusion router: {len(router_routes)} routes (prefix='{combined_prefix or '/'}')"
@@ -198,7 +201,19 @@ class Application(Starlette):
                 deps = await self._dependency_manager.resolve(info.func, request)
                 all_kwargs = {**params, **deps}
                 result = await self._call_endpoint(info.func, all_kwargs)
-                if isinstance(result, (JSONResponse, HTMLResponse)):
+                # TODO: add starlet all posible response heare ....
+                if isinstance(
+                    result,
+                    (
+                        JSONResponse,
+                        HTMLResponse,
+                        FileResponse,
+                        RedirectResponse,
+                        StreamingResponse,
+                        PlainTextResponse,
+                        Response,
+                    ),
+                ):
                     return result
                 return JSONResponse(result)
 
@@ -259,8 +274,24 @@ class Application(Starlette):
 
         internal_routes = [
             Route("/openapi.json", endpoint=openapi, methods=["GET"]),
-            Route("/"+self.config.docs_url if not self.config.docs_url.startswith("/") else self.config.docs_url, endpoint=docs, methods=["GET"]),
-            Route("/"+self.config.redoc_url if not self.config.redoc_url.startswith("/") else self.config.redoc_url, endpoint=redoc, methods=["GET"]),
+            Route(
+                (
+                    "/" + self.config.docs_url
+                    if not self.config.docs_url.startswith("/")
+                    else self.config.docs_url
+                ),
+                endpoint=docs,
+                methods=["GET"],
+            ),
+            Route(
+                (
+                    "/" + self.config.redoc_url
+                    if not self.config.redoc_url.startswith("/")
+                    else self.config.redoc_url
+                ),
+                endpoint=redoc,
+                methods=["GET"],
+            ),
         ]
         self.routes.extend(internal_routes)
         self.logger.debug("📚 Routes internes (docs/openapi/redoc) enregistrées")
