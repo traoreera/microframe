@@ -97,7 +97,7 @@ class BaseWebSocket:
             return user_id
 
         except (InvalidTokenException, TokenExpiredException) as e:
-            raise AuthenticationError(str(e))
+            return AuthenticationError(str(e))
 
     async def on_connect(self, websocket: WebSocket, user_id: Optional[str]):
         """
@@ -138,6 +138,16 @@ class BaseWebSocket:
         Args:
             websocket: WebSocket déconnecté
             user_id: ID de l'utilisateur
+        """
+
+    async def on_receive(self, websocket: WebSocket, user_id: Optional[str], message: Any):
+        """
+        Hook appelé par le routing Starlette
+
+        Args:
+            websocket: WebSocket connecté
+            user_id: ID de l'utilisateur authentifié
+            message: Données reçues (déja parsées en JSON)
         """
 
     async def __call__(self, websocket: WebSocket):

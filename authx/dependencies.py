@@ -32,7 +32,7 @@ class Depends:
 
 
 # TODO: if you wanted to use that you need to await the function before using it
-async def get_current_user(request: Request) -> UserResponse:
+async def get_current_user(request: Request) -> UserResponse | dict:
     """
     Récupère l'utilisateur courant depuis le token d'accès
 
@@ -48,7 +48,7 @@ async def get_current_user(request: Request) -> UserResponse:
     """
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
-        raise CredentialsException("Token manquant ou invalide")
+        return CredentialsException("Token manquant ou invalide").__dict__
 
     token = auth_header.replace("Bearer ", "")
 
@@ -59,11 +59,11 @@ async def get_current_user(request: Request) -> UserResponse:
     user_id = payload.get("sub")
 
     if not user_id:
-        raise CredentialsException("Token invalide")
+        return CredentialsException("Token invalide").__dict__
 
     user = await manager.get_user_by_id(user_id)
     if not user:
-        raise UserNotFoundException()
+        return UserNotFoundException().__dict__
 
     return user
 

@@ -1,5 +1,4 @@
 """
-Configuration for the authentication system
 """
 
 from datetime import timedelta
@@ -9,18 +8,77 @@ from annotated_doc import Doc
 
 
 class AuthConfig:
-    """Configuration for the authentication system
-    utilisation rapide:
+    """
+    Core configuration object for the authentication system.
+
+    This class centralizes all parameters required to control
+    JWT generation, expiration policies, and cookie behavior.
+
+    **Quick Start**
 
     ```python
     from authx.config import AuthConfig
-    auth = AuthConfig(secret_key="votre-cle-secrete-super-longue-et-complexe")
+
+    auth = AuthConfig(
+        secret_key="your-very-long-secure-secret",
+        algorithm="HS256",
+    )
     ```
-    - secret_key (str): secret key for the tokens
-    - algorithm (str): cryptographic algorithm for the tokens (default HS256)
-    - access_token_expire_minutes (int): lifetime of the access tokens (default 15 minutes)
-    - refresh_token_expire_days (int): lifetime of the refresh tokens (default 7 days)
-    - cookie_name (str): name of the cookie for storing the refresh token (default refresh_token)
+
+    **Parameters**
+    ----------
+    secret_key : str
+        Secret used to sign and validate JWT tokens. Must be long, random,
+        and never committed in source control.
+
+    algorithm : Literal["HS256", "RS256"], optional
+        JWT signing algorithm. Use:
+        - `"HS256"` for symmetric HMAC signing (single shared secret).
+        - `"RS256"` for asymmetric RSA key signing (public/private pair).
+        Defaults to `"HS256"`.
+
+    access_token_expire_minutes : int, optional
+        Access token lifetime in minutes. Short-lived token enforcing frequent renewal.
+        Defaults to `15`.
+
+    refresh_token_expire_days : int, optional
+        Refresh token lifetime in days. Long-term authentication persistence.
+        Defaults to `7`.
+
+    cookie_name : str, optional
+        Name of the cookie storing the refresh token in secure deployments.
+        Defaults to `"refresh_token"`.
+
+    cookie_secure : bool, optional
+        Forces cookie transmission exclusively over HTTPS.
+        Enabled by default.
+
+    cookie_httponly : bool, optional
+        Prevents JavaScript access to authentication cookies, mitigating XSS impact.
+        Enabled by default.
+
+    cookie_samesite : Literal["strict", "lax", "none"], optional
+        Controls cross-site cookie transmission behavior.
+        Defaults to `"strict"`.
+
+    **Attributes (computed)**
+    ------------------------
+    access_token_expire : timedelta
+        Derived expiration duration for access tokens.
+
+    refresh_token_expire : timedelta
+        Derived expiration duration for refresh tokens.
+
+    **Usage Notes**
+    --------------
+    - For production, always combine:
+      - `HTTPS`
+      - `cookie_secure=True`
+      - `HTTPOnly cookies`
+      - rotating refresh tokens
+
+    - `RS256` mode is recommended for distributed setups where verification
+      and signing happen in different services.
 
     """
 
@@ -83,8 +141,3 @@ class AuthConfig:
             "cookie_httponly": self.cookie_httponly,
             "cookie_samesite": self.cookie_samesite,
         }
-
-
-auth = AuthConfig(
-    secret_key="votre-cle-secrete-super-longue-et-complexe",
-)

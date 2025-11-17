@@ -100,55 +100,8 @@ async def get_stats(current_user=Depends(get_current_user)):
     return {"total_users": 100, "total_items": 250, "admin": current_user}
 
 
-# =====================================================
-# Application
-# =====================================================
-
-app = Application(
-    title="Example API",
-    version="2.0.0",
-    description="Example application using the new modular architecture",
-    debug=True,
-)
-
-# Add middlewares
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["*"],
-)
-
-app.add_middleware(SecurityMiddleware, rate_limit_requests=100, rate_limit_window=60)
-
 # Include routers
 api_router = Router(prefix="/api/v1", tags=["API v1"])
 api_router.include_router(users_router)
 api_router.include_router(items_router)
 api_router.include_router(admin_router)
-
-app.include_router(api_router)
-
-# Direct routes
-
-
-@app.get("/")
-async def root():
-    """Root endpoint"""
-    return {"message": "Welcome to the API", "version": "2.0.0", "docs": "/docs"}
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy"}
-
-
-# =====================================================
-# Run application
-# =====================================================
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

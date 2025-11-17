@@ -212,6 +212,7 @@ class Application(Starlette):
                         StreamingResponse,
                         PlainTextResponse,
                         Response,
+                        Exception,
                     ),
                 ):
                     return result

@@ -19,7 +19,7 @@ __version__ = "2.0.0"
 from starlette import status
 from starlette.requests import Request
 
-from .core import (
+from microframe.core import (
     AppConfig,
     Application,
     ForbiddenException,
@@ -29,9 +29,9 @@ from .core import (
     UnauthorizedException,
     ValidationException,
 )
-from .dependencies import Depends
-from .middleware import CORSMiddleware, SecurityMiddleware
-from .routing import Router
+from microframe.dependencies import Depends
+from microframe.middleware import CORSMiddleware, SecurityMiddleware
+from microframe.routing import Router
 
 __all__ = [
     "Application",
