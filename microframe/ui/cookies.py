@@ -1,102 +1,77 @@
 from datetime import timedelta
-from typing import Any, Dict, List, Optional
-
+from typing import  Optional
+from dataclasses import dataclass, field
+from starlette.responses import  Response
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+
+
+@dataclass
+class CookieConfig:
+    expires: Optional[timedelta] 
+    max_age: Optional[int] 
+    domain: Optional[str]
+    path: str = "/"
+    secure: bool = False
+    httponly: bool = False
 
 
 class CookieResponse:
-    """
-    Gestionnaire avancé de cookies + réponse HTTP.
-    - Chaînable
-    - Sécurisé par défaut
-    - Compatible Microframe / FastAPI / Starlette
-    """
 
-    __slots__ = ["_cookies", "_delete_queue"]
-
-    def __init__(self):
-        self._cookies: List[Dict[str, Any]] = []
-        self._delete_queue: List[str] = []
-
-    # --- ==========================  COOKIE OPS  ========================== ---
-
+    def __init__(self, config:CookieConfig) -> None:
+        self.config: CookieConfig = config
+        return
+    
     def set_cookie(
         self,
+        response: Response,
         name: str,
-        value: Any,
-        days: int = 7,
-        secure: bool = True,
-        http_only: bool = True,
-        samesite: str = "strict",
-        domain: Optional[str] = None,
-        path: str = "/",
-    ):
-        """Enregistre un cookie sécurisé avec expiration."""
-
-        self._cookies.append(
-            {
-                "key": name,
-                "value": str(value),
-                "max_age": int(timedelta(days=days).total_seconds()),
-                "httponly": http_only,
-                "path": path,
-                "secure": secure,
-                "samesite": samesite,
-                "domain": domain,
-            }
-        )
-        return self
-
-    def delete_cookie(self, name: str, path: str = "/", domain: Optional[str] = None):
-        """Marque un cookie pour suppression (RFC compliant)."""
-        self._delete_queue.append(name)
-        self._cookies.append(
-            {"key": name, "value": "", "max_age": 0, "expires": 0, "path": path, "domain": domain}
-        )
-        return self
-
-    # --- ==========================  RESPONSE  ========================== ---
-
-    def json(
-        self,
-        content: Dict[str, Any],
-        status_code: int = 200,
-        headers: Optional[Dict[str, str]] = None,
-    ) -> JSONResponse:
-        """Construit la réponse JSON avec tous les cookies appliqués."""
-        response = JSONResponse(content, status_code=status_code, headers=headers)
-        self._apply_cookies(response)
-        return response
-
-    def response(
-        self, body: str = "", status: int = 200, headers: Optional[Dict[str, str]] = None
+        value: str,
     ) -> Response:
-        """Alternative non-JSON."""
-        response = Response(body, status_code=status, headers=headers)
-        self._apply_cookies(response)
+        
+        response.set_cookie(
+            key=name,
+            value=value,
+            expires= self.config.expires,
+            max_age= self.config.max_age,
+            path= self.config.path,
+            domain= self.config.domain,
+            secure= self.config.secure,
+            httponly= self.config.httponly,
+        )
+        return response
+    
+    def delete_cookie(
+        self,
+        response: Response,
+        name: str,
+        path: str = "/",
+        domain: Optional[str] = None,
+        secure: bool = False,
+        httponly: bool = False,
+    ) -> Response:
+        response.delete_cookie(key=name, path=path, domain=domain, secure=secure, httponly=httponly)
         return response
 
-    # --- ==========================  REQUEST Helpers ====================== ---
 
-    @staticmethod
-    def get_cookie(request: Request, name: str, default: Optional[str] = None):
-        """Récupère un cookie dans la requête."""
-        return request.cookies.get(name, default)
+    def update_cookies(self,response:Response,  name: str, value: str) -> Response:
 
-    @staticmethod
-    def has_cookie(request: Request, name: str) -> bool:
-        """Vérifie présence cookie."""
-        return name in request.cookies
+        response.set_cookie(key=name, value=value)
+        return response
+    
+    def cookies_response(self, request: Request) -> dict:
+        return request.cookies
 
-    # --- ==========================  Internals ============================ ---
-
-    def _apply_cookies(self, response: Response):
-        """Finalisation: push tous les cookies dans la réponse HTTP."""
-        for cookie in self._cookies:
-            response.set_cookie(**cookie)
 
 
 def get_cookie_response() -> CookieResponse:
     """Factory compatible Microframe/Starlette/FastAPI Depends()."""
-    return CookieResponse()
+    conf = CookieConfig(
+        expires=timedelta(days=365),
+        max_age= 365 * 24 * 60 * 60,
+        domain="microframe.dev",
+        path="/",
+        secure=False,
+        httponly=False
+    )
+
+    return CookieResponse(conf)
