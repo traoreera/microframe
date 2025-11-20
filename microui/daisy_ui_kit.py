@@ -69,25 +69,27 @@ class DaisyUI:
     @staticmethod
     def theme_switcher(current_theme: str = "light", position: str = "dropdown-end") -> Markup:
         """Sélecteur de thème DaisyUI"""
-        themes_html = "\n".join(
-            [
-                f"<li>"
+        # Build theme items more efficiently
+        theme_items = []
+        for theme in DaisyUI.THEMES:
+            icon = "🌙" if theme == "dark" else "☀️" if theme == "light" else "🎨"
+            theme_items.append(
+                f'<li>'
                 f'<button class="theme-controller" '
                 f'hx-post="/theme/set" '
                 f'hx-vals=\'{{"theme": "{theme}"}}\' '
                 f'hx-swap="outerHTML" '
                 f'hx-target="body">'
                 f'<span class="flex items-center gap-2">'
-                f'{"🌙" if theme == "dark" else "☀️" if theme == "light" else "🎨"} '
-                f"{theme.capitalize()}"
-                f"</span>"
-                f"</button>"
-                f"</li>"
-                for theme in DaisyUI.THEMES
-            ]
-        )
+                f'{icon} {theme.capitalize()}'
+                f'</span>'
+                f'</button>'
+                f'</li>'
+            )
+        
+        themes_html = "\n".join(theme_items)
 
-        # Icône selon le thème actuel
+        # Icon selon le thème actuel
         current_icon = (
             "🌙" if current_theme == "dark" else "☀️" if current_theme == "light" else "🎨"
         )

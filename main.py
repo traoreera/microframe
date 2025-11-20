@@ -9,7 +9,7 @@ from authx import create_access_token, create_refresh_token, AuthConfig, decode_
 
 from microui import ( Alert, Button, Modal, ThemeManager, register_components, setup_daisy_ui,)
 from microui.auth_pages import AuthPages
-from microui.layout import DashBordLayout, LandingPage, KanbanLayout, EcommerceLayout, Pricing
+from microui import DashBordLayout, LandingPage, KanbanLayout, EcommerceLayout, Pricing
 
 appConf = AppConfig(title="DaisyUI Kit", version="0.0.1", debug=True)
 

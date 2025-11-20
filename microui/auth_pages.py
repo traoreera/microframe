@@ -23,25 +23,26 @@ class AuthPages:
         <div class="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4">
             <div class="w-full max-w-md">
                 {Card.render(
-                    title="Connexion",
-                    body=f'''
-                        <div id="result">{error_html}</div>
-                        <form hx-post="{form_action}" hx-target="#result" hx-swap="innerHTML">
+            title="Connexion",
+            body=f'''
+                        {error_html}
+                        <form method="POST" action="{form_action}" class="space-y-4">
                             {Input.render(
-                                name="email",
-                                type="email",
-                                label="Email",
-                                placeholder="votre@email.com",
-                                classes="mb-4"
-                            )}
-                                    
+                name="email",
+                type="email",
+                label="Email",
+                placeholder="votre@email.com",
+                classes="mb-4"
+            )}
+                            
                             {Input.render(
-                                name="password",
-                                type="password",
-                                label="Mot de passe",
-                                placeholder="••••••••",
-                                classes="mb-6"
-                            )}
+                name="password",
+                type="password",
+                label="Mot de passe",
+                placeholder="••••••••",
+                classes="mb-6"
+            )}
+                            
                             <div class="form-control">
                                 <label class="label cursor-pointer">
                                     <span class="label-text">Se souvenir de moi</span>
@@ -50,12 +51,12 @@ class AuthPages:
                             </div>
                             
                             {Button.render(
-                                text="Se connecter",
-                                variant="primary",
-                                size="md",
-                                block=True,
-                                classes="mt-6"
-                            )}
+                text="Se connecter",
+                variant="primary",
+                size="md",
+                block=True,
+                classes="mt-6"
+            )}
                         </form>
                         
                         <div class="divider">OU</div>

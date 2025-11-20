@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "microframe"
-version = "1.0.0"
+version = "2.0.0"
 description = "Un micro-framework ASGI inspiré de FastAPI"
 authors = ["Traore Eliezer <traoreera@gmail.com>"]
 readme = "README.md"

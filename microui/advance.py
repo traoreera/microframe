@@ -5,10 +5,13 @@ Composants avancés DaisyUI : Sidebar, Drawer, Breadcrumb, Tabs, etc.
 from typing import Dict, List, Literal, Optional
 
 from markupsafe import Markup
+from .utils import build_hx_attrs, build_menu_items
 
+from typing import List, Dict, Optional
+from markupsafe import Markup
 
 class Sidebar:
-    """Composant Sidebar avec menu"""
+    """Composant Sidebar avec menu responsive et sous-menus"""
 
     @staticmethod
     def render(
@@ -17,78 +20,91 @@ class Sidebar:
         brand_logo: Optional[str] = None,
         footer: Optional[str] = None,
         compact: bool = False,
+        collapsible: bool = True,
         classes: str = "",
     ) -> Markup:
         brand_html = ""
         if brand or brand_logo:
-            logo = f'<img src="{brand_logo}" class="w-8 h-8" />' if brand_logo else ""
+            logo = f'<img src="{brand_logo}" class="w-8 h-8" alt="Logo" />' if brand_logo else ""
             brand_html = f"""
             <li class="mb-2">
-                <a class="flex items-center gap-2 font-bold text-lg">
+                <a class="flex items-center gap-2 font-bold text-lg {'justify-center' if compact else ''}" title="{brand or ''}">
                     {logo}
-                    {brand or ""}
+                    {'<span class="sidebar-label">' + brand + '</span>' if brand else ''}
                 </a>
             </li>
             """
 
-        menu_items = ""
-        for item in items:
-            icon = item.get("icon", "")
-            active = "active" if item.get("active", False) else ""
-            submenu = item.get("submenu", [])
+        # Use utility helper for menu items
+        menu_items = build_menu_items(items, compact)
 
-            if submenu:
-                # Menu avec sous-menu
-                submenu_items = "".join(
-                    [
-                        f'<li><a href="{sub.get("href", "#")}">{sub.get("text", "")}</a></li>'
-                        for sub in submenu
-                    ]
-                )
-                menu_items += f"""
-                <li>
-                    <details>
-                        <summary>{icon} {item.get("text", "")}</summary>
-                        <ul>{submenu_items}</ul>
-                    </details>
-                </li>
-                """
-            else:
-                # Menu simple
-                hx_attrs = ""
-                if item.get("hx_get"):
-                    hx_attrs = f'hx-get="{item["hx_get"]}" hx-target="{item.get("hx_target", "#content")}" hx-swap="{item.get("hx_swap", "innerHTML")}"'
+        footer_html = (
+            f'<div class="p-2 lg:p-4 border-t border-base-300 mt-auto"><span class="sidebar-label lg:inline hidden">{footer}</span></div>'
+            if footer
+            else ""
+        )
 
-                menu_items += f"""
-                <li>
-                    <a href="{item.get("href", "#")}" class="{active}" {hx_attrs}>
-                        {icon} {item.get("text", "")}
-                    </a>
-                </li>
-                """
+        # Bouton collapse pour desktop uniquement
+        collapse_btn = ""
+        if collapsible:
+            collapse_btn = """
+            <button 
+                onclick="toggleSidebarCollapse()" 
+                class="hidden lg:flex btn btn-ghost btn-sm absolute top-4 -right-3 z-50 btn-circle bg-base-300"
+                id="collapse-btn"
+                aria-label="Réduire/Étendre la sidebar"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-4 h-4 stroke-current">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            """
 
-        footer_html = f'<div class="p-4 border-t border-base-300">{footer}</div>' if footer else ""
-
-        size_class = "w-64" if not compact else "w-20"
+        # Classes responsives pour la largeur (ajusté à lg:w-12 pour ~48px)
+        size_class = "w-64 lg:w-64 transition-width duration-300" if not compact else "w-12 lg:w-12 transition-width duration-300"
 
         return Markup(
             f"""
         <div class="drawer-side z-40">
-            <label for="sidebar-drawer" class="drawer-overlay"></label>
-            <aside class="menu {size_class} min-h-screen bg-base-200 text-base-content {classes}">
-                <ul class="p-4">
+            <label for="sidebar-drawer" class="drawer-overlay lg:hidden"></label>
+            <aside id="sidebar" class="menu {size_class} min-h-screen bg-base-200 text-base-content flex flex-col relative {classes}" role="navigation">
+                {collapse_btn}
+                <ul class="p-2 lg:p-4 flex-1">
                     {brand_html}
                     {menu_items}
                 </ul>
                 {footer_html}
             </aside>
         </div>
+        
+        <script>
+            function toggleSidebarCollapse() {{
+                const sidebar = document.getElementById('sidebar');
+                if (!sidebar) return;
+                sidebar.classList.toggle('lg:w-12');
+                sidebar.classList.toggle('lg:w-64');
+                const labels = sidebar.querySelectorAll('.sidebar-label');
+                labels.forEach(label => label.classList.toggle('lg:hidden'));
+                const details = sidebar.querySelectorAll('details');
+                details.forEach(detail => {{
+                    detail.classList.toggle('pointer-events-none');
+                    detail.classList.toggle('opacity-50');
+                    detail.setAttribute('aria-expanded', detail.classList.contains('pointer-events-none') ? 'false' : 'true');
+                }});
+                const submenus = sidebar.querySelectorAll('details ul');
+                submenus.forEach(ul => ul.classList.toggle('hidden'));
+                const arrow = document.querySelector('#collapse-btn path');
+                if (arrow) {{
+                    arrow.setAttribute('d', sidebar.classList.contains('lg:w-12') ? 'M9 5l7 7-7 7' : 'M15 19l-7-7 7-7');
+                }}
+            }}
+        </script>
         """
         )
 
 
 class Drawer:
-    """Composant Drawer pour sidebar responsive"""
+    """Composant Drawer pour sidebar responsive (mobile + desktop)"""
 
     @staticmethod
     def render(
@@ -96,14 +112,32 @@ class Drawer:
         main_content: str,
         drawer_id: str = "sidebar-drawer",
         classes: str = "",
+        mobile_header: Optional[str] = None,
     ) -> Markup:
+        # Bouton hamburger pour mobile
+        hamburger_btn = """
+        <div class="lg:hidden p-4 bg-base-200">
+            <label for="sidebar-drawer" class="btn btn-square btn-ghost">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-6 h-6 stroke-current">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </label>
+        </div>
+        """
+
+        mobile_header_html = f"<div class='lg:hidden'>{mobile_header}</div>" if mobile_header else ""
+
         return Markup(
             f"""
         <div class="drawer lg:drawer-open {classes}">
             <input id="{drawer_id}" type="checkbox" class="drawer-toggle" />
             
-            <div class="drawer-content flex flex-col">
-                {main_content}
+            <div class="drawer-content flex flex-col min-h-screen">
+                {hamburger_btn}
+                {mobile_header_html}
+                <main class="flex-1 p-4 lg:p-6">
+                    {main_content}
+                </main>
             </div>
             
             {sidebar_content}
@@ -111,6 +145,76 @@ class Drawer:
         """
         )
 
+# Fonction utilitaire pour les items de menu avec support sous-menus
+def build_menu_items(items: List[Dict], compact: bool = False) -> str:
+    """Génère les items de menu avec sous-menus et tooltips pour mode compact"""
+    html = ""
+    for item in items:
+        icon = item.get("icon", "")
+        label = item.get("label", "")
+        url = item.get("url", "#")
+        active = item.get("active", False)
+        badge = item.get("badge", "")
+        submenu = item.get("submenu", [])
+        
+        active_class = "active" if active else ""
+        badge_html = f'<span class="badge badge-sm">{badge}</span>' if badge else ""
+        title_attr = f'title="{label}"' if compact else ""
+        item_class = "flex items-center justify-center lg:justify-start p-2 px-2 lg:p-2" if compact else "p-2"
+        
+        # Remplacer les emojis par des SVG génériques (ajustez selon vos besoins)
+        if icon == "📊":
+            icon_svg = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>'
+        elif icon == "👥":
+            icon_svg = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>'
+        elif icon == "⚙️":
+            icon_svg = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c1.56.379 2.98-.379 2.98-2.978a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>'
+        else:
+            icon_svg = icon  # Si ce n'est pas un emoji, garder tel quel
+        
+        # Si il y a un sous-menu
+        if submenu:
+            submenu_items = ""
+            for sub in submenu:
+                sub_icon = sub.get("icon", "")
+                sub_label = sub.get("label", "")
+                sub_url = sub.get("url", "#")
+                sub_active = sub.get("active", False)
+                sub_active_class = "active" if sub_active else ""
+                sub_title_attr = f'title="{sub_label}"' if compact else ""
+                sub_item_class = "flex items-center justify-center lg:justify-start p-2 px-2 lg:p-2" if compact else "p-2"
+                
+                submenu_items += f"""
+                <li><a href="{sub_url}" class="{sub_active_class} {sub_item_class}" {sub_title_attr}>{sub_icon} <span class="sidebar-label">{sub_label}</span></a></li>
+                """
+            
+            html += f"""
+            <li>
+                <details class="{'pointer-events-none opacity-50' if compact else ''}" aria-expanded="{'false' if compact else 'true'}">
+                    <summary class="{active_class} {item_class}" {title_attr}>
+                        {icon_svg}
+                        <span class="sidebar-label">{label}</span>
+                        {badge_html}
+                    </summary>
+                    <ul class="{'hidden' if compact else ''}">
+                        {submenu_items}
+                    </ul>
+                </details>
+            </li>
+            """
+        else:
+            # Item simple sans sous-menu
+            html += f"""
+            <li>
+                <a href="{url}" class="{active_class} {item_class}" {title_attr}>
+                    {icon_svg}
+                    <span class="sidebar-label">{label}</span>
+                    {badge_html}
+                </a>
+            </li>
+            """
+    
+    return html
 
 class Breadcrumb:
     """Composant Breadcrumb pour navigation"""
