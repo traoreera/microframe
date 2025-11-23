@@ -5,10 +5,9 @@ Composants avancés DaisyUI : Sidebar, Drawer, Breadcrumb, Tabs, etc.
 from typing import Dict, List, Literal, Optional
 
 from markupsafe import Markup
+
 from .utils import build_hx_attrs, build_menu_items
 
-from typing import List, Dict, Optional
-from markupsafe import Markup
 
 class Sidebar:
     """Composant Sidebar avec menu responsive et sous-menus"""
@@ -61,7 +60,11 @@ class Sidebar:
             """
 
         # Classes responsives pour la largeur (ajusté à lg:w-12 pour ~48px)
-        size_class = "w-64 lg:w-64 transition-width duration-300" if not compact else "w-12 lg:w-12 transition-width duration-300"
+        size_class = (
+            "w-64 lg:w-64 transition-width duration-300"
+            if not compact
+            else "w-12 lg:w-12 transition-width duration-300"
+        )
 
         return Markup(
             f"""
@@ -125,7 +128,9 @@ class Drawer:
         </div>
         """
 
-        mobile_header_html = f"<div class='lg:hidden'>{mobile_header}</div>" if mobile_header else ""
+        mobile_header_html = (
+            f"<div class='lg:hidden'>{mobile_header}</div>" if mobile_header else ""
+        )
 
         return Markup(
             f"""
@@ -145,7 +150,10 @@ class Drawer:
         """
         )
 
+
 # Fonction utilitaire pour les items de menu avec support sous-menus
+
+
 def build_menu_items(items: List[Dict], compact: bool = False) -> str:
     """Génère les items de menu avec sous-menus et tooltips pour mode compact"""
     html = ""
@@ -156,12 +164,16 @@ def build_menu_items(items: List[Dict], compact: bool = False) -> str:
         active = item.get("active", False)
         badge = item.get("badge", "")
         submenu = item.get("submenu", [])
-        
+
         active_class = "active" if active else ""
         badge_html = f'<span class="badge badge-sm">{badge}</span>' if badge else ""
         title_attr = f'title="{label}"' if compact else ""
-        item_class = "flex items-center justify-center lg:justify-start p-2 px-2 lg:p-2" if compact else "p-2"
-        
+        item_class = (
+            "flex items-center justify-center lg:justify-start p-2 px-2 lg:p-2"
+            if compact
+            else "p-2"
+        )
+
         # Remplacer les emojis par des SVG génériques (ajustez selon vos besoins)
         if icon == "📊":
             icon_svg = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>'
@@ -171,7 +183,7 @@ def build_menu_items(items: List[Dict], compact: bool = False) -> str:
             icon_svg = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c1.56.379 2.98-.379 2.98-2.978a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>'
         else:
             icon_svg = icon  # Si ce n'est pas un emoji, garder tel quel
-        
+
         # Si il y a un sous-menu
         if submenu:
             submenu_items = ""
@@ -182,12 +194,16 @@ def build_menu_items(items: List[Dict], compact: bool = False) -> str:
                 sub_active = sub.get("active", False)
                 sub_active_class = "active" if sub_active else ""
                 sub_title_attr = f'title="{sub_label}"' if compact else ""
-                sub_item_class = "flex items-center justify-center lg:justify-start p-2 px-2 lg:p-2" if compact else "p-2"
-                
+                sub_item_class = (
+                    "flex items-center justify-center lg:justify-start p-2 px-2 lg:p-2"
+                    if compact
+                    else "p-2"
+                )
+
                 submenu_items += f"""
                 <li><a href="{sub_url}" class="{sub_active_class} {sub_item_class}" {sub_title_attr}>{sub_icon} <span class="sidebar-label">{sub_label}</span></a></li>
                 """
-            
+
             html += f"""
             <li>
                 <details class="{'pointer-events-none opacity-50' if compact else ''}" aria-expanded="{'false' if compact else 'true'}">
@@ -213,8 +229,9 @@ def build_menu_items(items: List[Dict], compact: bool = False) -> str:
                 </a>
             </li>
             """
-    
+
     return html
+
 
 class Breadcrumb:
     """Composant Breadcrumb pour navigation"""
@@ -261,8 +278,7 @@ class Tabs:
 
             tabs_html.append(
                 f"""
-            <a class="tab tab-{size} {active}" 
-               onclick="document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden')); 
+            <a class="tab tab-{size} {active}" onclick="document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden')); 
                         document.getElementById('{tab_id}_content').classList.remove('hidden');
                         document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active'));
                         this.classList.add('tab-active');">

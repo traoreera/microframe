@@ -74,19 +74,19 @@ class DaisyUI:
         for theme in DaisyUI.THEMES:
             icon = "🌙" if theme == "dark" else "☀️" if theme == "light" else "🎨"
             theme_items.append(
-                f'<li>'
+                f"<li>"
                 f'<button class="theme-controller" '
                 f'hx-post="/theme/set" '
                 f'hx-vals=\'{{"theme": "{theme}"}}\' '
                 f'hx-swap="outerHTML" '
                 f'hx-target="body">'
                 f'<span class="flex items-center gap-2">'
-                f'{icon} {theme.capitalize()}'
-                f'</span>'
-                f'</button>'
-                f'</li>'
+                f"{icon} {theme.capitalize()}"
+                f"</span>"
+                f"</button>"
+                f"</li>"
             )
-        
+
         themes_html = "\n".join(theme_items)
 
         # Icon selon le thème actuel

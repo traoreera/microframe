@@ -1,20 +1,33 @@
+# app/engine/component_extension.py
+
+from pathlib import Path
+from typing import Any
+
 import jinja2
 from jinja2 import nodes
 from jinja2.ext import Extension
 from markupsafe import Markup
-from pathlib import Path
 
 
 class ComponentRegistry:
-    _registry = {}
+    registry = {}
 
     @classmethod
-    def register(cls, name: str, template):
-        cls._registry[name] = template
+    def register(cls, name, template):
+        cls.registry[name] = template
 
     @classmethod
-    def get(cls, name: str):
-        return cls._registry.get(name)
+    def get(cls, name):
+        return cls.registry.get(name)
+
+    @classmethod
+    def clear(cls):
+        cls.registry.clear()
+
+    @classmethod
+    def delete(cls, name):
+        cls.registry.pop(name, None)
+
 
 class ComponentExtension(Extension):
     tags = {"component"}
@@ -36,17 +49,27 @@ class ComponentExtension(Extension):
             self.call_method("_render", [component_name], props), [], [], body
         ).set_lineno(lineno)
 
-    def _render(self, name, caller, **props):
+    def _render(self, name, caller, **props) -> str | Any:
         template = ComponentRegistry.get(name)
         if not template:
-            return f"<!-- component '{name}' not found -->"
+            return f"<p class='error'>Component '{name}' not found</p>"
 
         props["slot"] = Markup(caller())
-        return jinja2.Template(template).render(**props)
+        try:
+            return jinja2.Template(template).render(**props)
+        except Exception as e:
+            return f"<p class='error'>Error rendering component '{name}': {e}</p>"
 
 
-def auto_register_components(folder="templates/components"):
+def auto_register_components(folder):
+    """_summary_
+
+    Args:
+        folder (str): path to folder containing components
+    """
     folder = Path(folder)
+    if not folder.exists():
+        return
+
     for file in folder.glob("*.html"):
         ComponentRegistry.register(file.stem, file.read_text())
-        print(f"Registered component: {file.stem}")

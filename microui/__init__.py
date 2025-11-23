@@ -2,6 +2,7 @@
 MicroUI - DaisyUI components for Python/HTMX
 Lazy loading for improved performance
 """
+
 import typing
 
 if typing.TYPE_CHECKING:
@@ -36,34 +37,26 @@ if typing.TYPE_CHECKING:
         Table,
         register_components,
     )
+    from .layout import Contact, Pricing
+    from .layout_pages import DashBordLayout, EcommerceLayout, KanbanLayout, LandingPage
+    from .pages import (
+        AuthComponents,
+        AuthPages,
+        LoginConfig,
+        ProfileConfig,
+        ProfilePages,
+        RegisterConfig,
+        SettingsConfig,
+        SettingsPages,
+        UsersManagement,
+        UsersManagementConfig,
+    )
     from .thems import (
         ThemeManager,
         create_theme_routes,
         get_theme_context,
         register_theme_helpers,
         setup_daisy_ui,
-    )
-    from .layout import (
-        Contact,
-        Pricing,
-    )
-    from .layout_pages import (
-        DashBordLayout,
-        EcommerceLayout,
-        LandingPage,
-        KanbanLayout,
-    )
-    from .pages import (
-        LoginConfig,
-        RegisterConfig,
-        ProfileConfig,
-        UsersManagementConfig,
-        SettingsConfig,
-        AuthComponents,
-        AuthPages,
-        ProfilePages,
-        UsersManagement,
-        SettingsPages,
     )
 
 __all__ = [
@@ -187,7 +180,7 @@ def __getattr__(name: str):
     if name in _import_map:
         module_path, attr_name = _import_map[name]
         import importlib
-        
+
         module = importlib.import_module(module_path)
         return getattr(module, attr_name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -2,7 +2,9 @@
 Utility helpers for HTML generation
 Reduces code duplication across microui components
 """
-from typing import List, Dict, Optional
+
+from typing import Dict, List, Optional
+
 from markupsafe import Markup
 
 
@@ -40,7 +42,7 @@ def build_hx_attrs(
         attrs.append(f'hx-trigger="{hx_trigger}"')
     if hx_vals:
         attrs.append(f"hx-vals='{hx_vals}'")
-    
+
     return " ".join(attrs)
 
 
@@ -57,7 +59,10 @@ def build_link(
     class_attr = f'class="{classes}"' if classes else ""
     return f'<a href="{href}" {class_attr} {hx_attrs}>{text}</a>'
 
+
 # Fonction utilitaire pour les items de menu avec support sous-menus
+
+
 def build_menu_items(items: List[Dict], compact: bool = False) -> str:
     """Génère les items de menu avec sous-menus et tooltips pour mode compact"""
     html = ""
@@ -68,10 +73,10 @@ def build_menu_items(items: List[Dict], compact: bool = False) -> str:
         active = item.get("active", False)
         badge = item.get("badge", "")
         submenu = item.get("submenu", [])
-        
+
         active_class = "active" if active else ""
         badge_html = f'<span class="badge badge-sm">{badge}</span>' if badge else ""
-        
+
         # Si il y a un sous-menu
         if submenu:
             submenu_items = ""
@@ -81,11 +86,11 @@ def build_menu_items(items: List[Dict], compact: bool = False) -> str:
                 sub_url = sub.get("url", "#")
                 sub_active = sub.get("active", False)
                 sub_active_class = "active" if sub_active else ""
-                
+
                 submenu_items += f"""
                 <li><a href="{sub_url}" class="{sub_active_class}">{sub_icon} <span class="sidebar-label">{sub_label}</span></a></li>
                 """
-            
+
             html += f"""
             <li>
                 <details>
@@ -111,18 +116,22 @@ def build_menu_items(items: List[Dict], compact: bool = False) -> str:
                 </a>
             </li>
             """
-    
+
     return html
 
 
-def build_feature_list(features: List[str], icon: str = "✓", icon_class: str = "text-success") -> str:
+def build_feature_list(
+    features: List[str], icon: str = "✓", icon_class: str = "text-success"
+) -> str:
     """Build a feature list with checkmarks"""
-    return "\n".join([
-        f'<li class="flex items-center gap-2">'
-        f'<span class="{icon_class}">{icon}</span> {feature}'
-        f'</li>'
-        for feature in features
-    ])
+    return "\n".join(
+        [
+            f'<li class="flex items-center gap-2">'
+            f'<span class="{icon_class}">{icon}</span> {feature}'
+            f"</li>"
+            for feature in features
+        ]
+    )
 
 
 # Common SVG icons cache

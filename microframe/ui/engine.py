@@ -1,42 +1,12 @@
 from pathlib import Path
 
 import jinja2
-from jinja2 import nodes
-from jinja2.ext import Extension
-from markupsafe import Markup
+
 from starlette.requests import Request
 from starlette.responses import HTMLResponse
 
-from .components import ComponentRegistry, auto_register_components
+from .components import  auto_register_components
 
-
-class ComponentExtension(Extension):
-    tags = {"component"}
-
-    def parse(self, parser):
-        lineno = next(parser.stream).lineno
-        component_name = parser.parse_expression()
-
-        props = []
-        while parser.stream.current.type != "block_end":
-            key = parser.parse_assign_target()
-            parser.stream.expect("assign")
-            value = parser.parse_expression()
-            props.append(nodes.Keyword(key.name, value))
-
-        body = parser.parse_statements(("name:endcomponent",), drop_needle=True)
-
-        return nodes.CallBlock(
-            self.call_method("_render", [component_name], props), [], [], body
-        ).set_lineno(lineno)
-
-    def _render(self, name, caller, **props):
-        template = ComponentRegistry.get(name)
-        if not template:
-            return f"<!-- component '{name}' not found -->"
-
-        props["slot"] = Markup(caller())
-        return jinja2.Template(template).render(**props)
 
 
 class TemplateEngine:

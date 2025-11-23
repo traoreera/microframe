@@ -1,37 +1,45 @@
 """
 Layouts complets pour tous les cas d'usage
 """
+
 from typing import Dict, List, Optional
 
 from markupsafe import Markup
-from .daisy_ui_kit import Avatar, Card, DaisyUI, Alert, Input, Button, Badge, Navbar
+
+from .daisy_ui_kit import Alert, Avatar, Badge, Button, Card, DaisyUI, Input, Navbar
 from .utils import build_feature_list
+
 
 class Pricing:
     """Composant Pricing - Affichage des plans tarifaires"""
-    
+
     @staticmethod
     def pricing_table(
         plans: List[dict],
         featured_plan: Optional[int] = None,
         currency: str = "€",
         period: str = "/mois",
-        classes: str = ""
+        classes: str = "",
     ) -> Markup:
         """Tableau de pricing avec plusieurs plans"""
-        
+
         pricing_html = []
-        
+
         for idx, plan in enumerate(plans):
             is_featured = idx == featured_plan
             featured_class = "ring-2 ring-primary scale-105" if is_featured else ""
-            featured_badge = '<div class="badge badge-primary absolute -top-3 -right-3">Populaire</div>' if is_featured else ""
-            
+            featured_badge = (
+                '<div class="badge badge-primary absolute -top-3 -right-3">Populaire</div>'
+                if is_featured
+                else ""
+            )
+
             # Use utility helper for feature list
             features = plan.get("features", [])
             features_html = build_feature_list(features)
-            
-            pricing_html.append(f"""
+
+            pricing_html.append(
+                f"""
             <div class="relative {featured_class} transition-transform duration-300">
                 {featured_badge}
                 <div class="card bg-base-100 shadow-xl h-full">
@@ -59,49 +67,48 @@ class Pricing:
                     </div>
                 </div>
             </div>
-            """)
-        
-        return Markup(f"""
+            """
+            )
+
+        return Markup(
+            f"""
         <div class="grid grid-cols-1 md:grid-cols-{len(plans)} gap-6 {classes}">
             {''.join(pricing_html)}
         </div>
-        """)
-    
+        """
+        )
+
     @staticmethod
-    def pricing_comparison(
-        plans: List[dict],
-        features: List[dict],
-        classes: str = ""
-    ) -> Markup:
+    def pricing_comparison(plans: List[dict], features: List[dict], classes: str = "") -> Markup:
         """Tableau de comparaison détaillé des plans"""
-        
+
         # En-tête avec les plans
-        plans_header = "\n".join([
-            f'<th class="text-center font-bold">{plan.get("name", "Plan")}</th>'
-            for plan in plans
-        ])
-        
+        plans_header = "\n".join(
+            [f'<th class="text-center font-bold">{plan.get("name", "Plan")}</th>' for plan in plans]
+        )
+
         # Lignes de comparaisonplan_features
         features_html = ""
         for feature in features:
             feature_name = feature.get("name", "")
             cells = []
-            
+
             for plan in plans:
                 plan_features = plan.get("features", [])
-                
+
                 for plan_feature in plan_features:
-                    
+
                     cells.append(f'<td class="text-center">{plan_feature}</td>')
-            
+
             features_html += f"""
             <tr>
                 <td class="font-semibold text-left">{feature_name}</td>
                 {''.join(cells)}
             </tr>
             """
-        
-        return Markup(f"""
+
+        return Markup(
+            f"""
         <div class="overflow-x-auto {classes}">
             <table class="table table-zebra w-full">
                 <thead>
@@ -115,8 +122,9 @@ class Pricing:
                 </tbody>
             </table>
         </div>
-        """)
-    
+        """
+        )
+
     @staticmethod
     def simple_pricing_card(
         name: str,
@@ -127,20 +135,23 @@ class Pricing:
         features: List[str] = None,
         cta_text: str = "Choisir ce plan",
         featured: bool = False,
-        classes: str = ""
+        classes: str = "",
     ) -> Markup:
         """Carte de prix simple"""
-        
+
         if features is None:
             features = []
-        
-        features_html = "\n".join([
-            f'<li class="flex items-center gap-2"><span class="text-success">✓</span> {feature}</li>'
-            for feature in features
-        ])
+
+        features_html = "\n".join(
+            [
+                f'<li class="flex items-center gap-2"><span class="text-success">✓</span> {feature}</li>'
+                for feature in features
+            ]
+        )
         featured_class = "ring-2 ring-primary" if featured else ""
         featured_badge = '<div class="badge badge-primary">Populaire</div>' if featured else ""
-        return Markup(f"""
+        return Markup(
+            f"""
         <div class="card bg-base-100 shadow-xl {featured_class} {classes}">
             <div class="card-body">
                 <div class="flex justify-between items-start mb-2">
@@ -163,8 +174,9 @@ class Pricing:
                 </button>
             </div>
         </div>
-        """)
-    
+        """
+        )
+
     @staticmethod
     def pricing_page(
         title: str = "Nos tarifs",
@@ -172,23 +184,18 @@ class Pricing:
         plans: List[dict] = None,
         featured_plan: Optional[int] = None,
         show_comparison: bool = True,
-        comparison_features: List[dict] = None
+        comparison_features: List[dict] = None,
     ) -> Markup:
         """Page complète de pricing"""
-        
+
         if plans is None:
             plans = [
                 {
                     "name": "Starter",
                     "price": "29",
                     "description": "Parfait pour débuter",
-                    "features": [
-                        "5 projets",
-                        "Support email",
-                        "1 GB stockage",
-                        "Accès API limité"
-                    ],
-                    "cta_text": "Commencer"
+                    "features": ["5 projets", "Support email", "1 GB stockage", "Accès API limité"],
+                    "cta_text": "Commencer",
                 },
                 {
                     "name": "Professional",
@@ -199,9 +206,9 @@ class Pricing:
                         "Support prioritaire",
                         "100 GB stockage",
                         "API illimitée",
-                        "Intégrations avancées"
+                        "Intégrations avancées",
                     ],
-                    "cta_text": "Essayer gratuitement"
+                    "cta_text": "Essayer gratuitement",
                 },
                 {
                     "name": "Enterprise",
@@ -212,12 +219,12 @@ class Pricing:
                         "Support 24/7",
                         "Stockage illimité",
                         "SLA garanti",
-                        "Compte dédié"
+                        "Compte dédié",
                     ],
-                    "cta_text": "Nous contacter"
-                }
+                    "cta_text": "Nous contacter",
+                },
             ]
-        
+
         if comparison_features is None:
             comparison_features = [
                 {"name": "Projets"},
@@ -227,16 +234,13 @@ class Pricing:
                 {"name": "Intégrations"},
                 {"name": "Sécurité avancée"},
                 {"name": "Analytics"},
-                {"name": "Webhooks"}
+                {"name": "Webhooks"},
             ]
-        
+
         pricing_section = Pricing.pricing_table(
-            plans=plans,
-            featured_plan=featured_plan or 1,
-            currency="€",
-            period="/mois"
+            plans=plans, featured_plan=featured_plan or 1, currency="€", period="/mois"
         )
-        
+
         comparison_section = ""
         if show_comparison:
             comparison_section = f"""
@@ -245,7 +249,7 @@ class Pricing:
                 {Pricing.pricing_comparison(plans=plans, features=comparison_features)}
             </section>
             """
-        
+
         faq_section = f"""
         <section class="mt-20">
             <h2 class="text-3xl font-bold text-center mb-12">Questions fréquentes</h2>
@@ -289,8 +293,9 @@ class Pricing:
             </div>
         </section>
         """
-        
-        return Markup(f"""
+
+        return Markup(
+            f"""
         <div class="min-h-screen bg-gradient-to-b from-base-100 to-base-200">
             <!-- Hero Section -->
             <section class="pt-20 pb-16 px-4">
@@ -328,11 +333,13 @@ class Pricing:
                 </div>
             </section>
         </div>
-        """)
+        """
+        )
+
 
 class Contact:
     """Composant Contact - Formulaires et pages de contact"""
-    
+
     @staticmethod
     def contact_form(
         form_action: str = "/contact/send",
@@ -341,25 +348,24 @@ class Contact:
         include_company: bool = False,
         success_message: Optional[str] = None,
         error_message: Optional[str] = None,
-        classes: str = ""
+        classes: str = "",
     ) -> Markup:
         """Formulaire de contact simple"""
-        
-        
-        
-        success_html = Alert.render(
-            message=success_message,
-            type="success",
-            dismissible=True
-        ) if success_message else ""
-        
-        error_html = Alert.render(
-            message=error_message,
-            type="error",
-            dismissible=True
-        ) if error_message else ""
-        
-        phone_field = f"""
+
+        success_html = (
+            Alert.render(message=success_message, type="success", dismissible=True)
+            if success_message
+            else ""
+        )
+
+        error_html = (
+            Alert.render(message=error_message, type="error", dismissible=True)
+            if error_message
+            else ""
+        )
+
+        phone_field = (
+            f"""
         {Input.render(
             name="phone",
             type="tel",
@@ -367,9 +373,13 @@ class Contact:
             placeholder="+33 6 12 34 56 78",
             classes="mb-4"
         )}
-        """ if include_phone else ""
-        
-        company_field = f"""
+        """
+            if include_phone
+            else ""
+        )
+
+        company_field = (
+            f"""
         {Input.render(
             name="company",
             type="text",
@@ -377,9 +387,13 @@ class Contact:
             placeholder="Votre entreprise",
             classes="mb-4"
         )}
-        """ if include_company else ""
-        
-        subject_field = f"""
+        """
+            if include_company
+            else ""
+        )
+
+        subject_field = (
+            f"""
         {Input.render(
             name="subject",
             type="text",
@@ -388,9 +402,13 @@ class Contact:
             required=True,
             classes="mb-4"
         )}
-        """ if include_subject else ""
-        
-        return Markup(f"""
+        """
+            if include_subject
+            else ""
+        )
+
+        return Markup(
+            f"""
         <div class="card bg-base-100 shadow-xl {classes}">
             <div class="card-body">
                 <h2 class="card-title mb-6">Nous contacter</h2>
@@ -400,22 +418,22 @@ class Contact:
                 
                 <form method="POST" action="{form_action}" class="space-y-4">
                     {Input.render(
-                        name="full_name",
-                        type="text",
-                        label="Nom complet",
-                        placeholder="Jean Dupont",
-                        required=True,
-                        classes="mb-4"
-                    )}
+            name="full_name",
+            type="text",
+            label="Nom complet",
+            placeholder="Jean Dupont",
+            required=True,
+            classes="mb-4"
+        )}
                     
                     {Input.render(
-                        name="email",
-                        type="email",
-                        label="Email",
-                        placeholder="votre@email.com",
-                        required=True,
-                        classes="mb-4"
-                    )}
+            name="email",
+            type="email",
+            label="Email",
+            placeholder="votre@email.com",
+            required=True,
+            classes="mb-4"
+        )}
                     
                     {phone_field}
                     {company_field}
@@ -434,15 +452,16 @@ class Contact:
                     </div>
                     
                     {Button.render(
-                        text="Envoyer le message",
-                        variant="primary",
-                        block=True
-                    )}
+            text="Envoyer le message",
+            variant="primary",
+            block=True
+        )}
                 </form>
             </div>
         </div>
-        """)
-    
+        """
+        )
+
     @staticmethod
     def contact_info_card(
         title: str = "Informations de contact",
@@ -451,14 +470,15 @@ class Contact:
         address: Optional[str] = None,
         hours: Optional[str] = None,
         social_links: Optional[dict] = None,
-        classes: str = ""
+        classes: str = "",
     ) -> Markup:
         """Carte d'informations de contact"""
-        
+
         contact_items = []
-        
+
         if phone:
-            contact_items.append(f"""
+            contact_items.append(
+                f"""
             <div class="flex items-start gap-4 pb-4 border-b border-base-300 last:border-b-0">
                 <div class="text-2xl">📞</div>
                 <div>
@@ -466,10 +486,12 @@ class Contact:
                     <a href="tel:{phone}" class="text-primary hover:underline">{phone}</a>
                 </div>
             </div>
-            """)
-        
+            """
+            )
+
         if email:
-            contact_items.append(f"""
+            contact_items.append(
+                f"""
             <div class="flex items-start gap-4 pb-4 border-b border-base-300 last:border-b-0">
                 <div class="text-2xl">📧</div>
                 <div>
@@ -477,10 +499,12 @@ class Contact:
                     <a href="mailto:{email}" class="text-primary hover:underline">{email}</a>
                 </div>
             </div>
-            """)
-        
+            """
+            )
+
         if address:
-            contact_items.append(f"""
+            contact_items.append(
+                f"""
             <div class="flex items-start gap-4 pb-4 border-b border-base-300 last:border-b-0">
                 <div class="text-2xl">📍</div>
                 <div>
@@ -488,10 +512,12 @@ class Contact:
                     <p class="text-base-content/70">{address}</p>
                 </div>
             </div>
-            """)
-        
+            """
+            )
+
         if hours:
-            contact_items.append(f"""
+            contact_items.append(
+                f"""
             <div class="flex items-start gap-4 pb-4 border-b border-base-300 last:border-b-0">
                 <div class="text-2xl">🕐</div>
                 <div>
@@ -499,8 +525,9 @@ class Contact:
                     <p class="text-base-content/70">{hours}</p>
                 </div>
             </div>
-            """)
-        
+            """
+            )
+
         social_html = ""
         if social_links:
             social_buttons = []
@@ -510,17 +537,19 @@ class Contact:
                     "twitter": '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2s9 5 20 5a9.5 9.5 0 00-9-5.5c4.75 2.25 7-7 7-7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
                     "linkedin": '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>',
                     "github": '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.868-.013-1.703-2.782.603-3.369-1.343-3.369-1.343-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.544 2.914 1.19.092-.926.35-1.545.636-1.9-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.846c.85.004 1.705.114 2.504.336 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.137 20.191 22 16.432 22 12.017 22 6.484 17.522 2 12 2z" fill-rule="evenodd"/></svg>',
-                    "instagram": '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>'
+                    "instagram": '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>',
                 }
-                
+
                 icon = icons.get(platform, "🔗")
-                social_buttons.append(f'''
+                social_buttons.append(
+                    f"""
                 <a href="{url}" target="_blank" rel="noopener noreferrer" 
                    class="btn btn-circle btn-sm btn-ghost" title="{platform.capitalize()}">
                     {icon}
                 </a>
-                ''')
-            
+                """
+                )
+
             social_html = f"""
             <div class="mt-6 pt-6 border-t border-base-300">
                 <p class="font-semibold mb-4">Suivez-nous</p>
@@ -529,8 +558,9 @@ class Contact:
                 </div>
             </div>
             """
-        
-        return Markup(f"""
+
+        return Markup(
+            f"""
         <div class="card bg-base-100 shadow-xl {classes}">
             <div class="card-body">
                 <h2 class="card-title mb-6">{title}</h2>
@@ -542,8 +572,9 @@ class Contact:
                 {social_html}
             </div>
         </div>
-        """)
-    
+        """
+        )
+
     @staticmethod
     def contact_page(
         title: str = "Nous contacter",
@@ -552,10 +583,10 @@ class Contact:
         locations: Optional[List[dict]] = None,
         social_links: Optional[Dict] = None,
         faq: Optional[List[dict]] = None,
-        direct_contact:Optional[Dict] = {},
+        direct_contact: Optional[Dict] = {},
     ) -> Markup:
         """Page complète de contact"""
-        
+
         if locations is None:
             locations = [
                 {
@@ -563,17 +594,16 @@ class Contact:
                     "phone": "+33 1 23 45 67 89",
                     "email": "contact@example.com",
                     "address": "123 Avenue des Champs, 75000 Paris, France",
-                    "hours": "Lun-Ven: 9h-18h"
+                    "hours": "Lun-Ven: 9h-18h",
                 },
                 {
                     "name": "Bureau Londres",
                     "phone": "+44 20 7123 4567",
                     "email": "london@example.com",
                     "address": "456 Oxford Street, London W1D 1BS, UK",
-                    "hours": "Lun-Ven: 9h-17h"
-                }
+                    "hours": "Lun-Ven: 9h-17h",
+                },
             ]
-        
 
         if social_links is None:
             social_links = {
@@ -584,42 +614,46 @@ class Contact:
                 "youtube": "https://www.youtube.com/",
             }
 
+        locations_html = "\n".join(
+            [
+                Contact.contact_info_card(
+                    title=loc.get("name", "Bureau"),
+                    phone=loc.get("phone"),
+                    email=loc.get("email"),
+                    address=loc.get("address"),
+                    hours=loc.get("hours"),
+                    social_links=loc.get("social_links"),
+                )
+                for loc in locations
+            ]
+        )
 
-        locations_html = "\n".join([
-            Contact.contact_info_card(
-                title=loc.get("name", "Bureau"),
-                phone=loc.get("phone"),
-                email=loc.get("email"),
-                address=loc.get("address"),
-                hours=loc.get("hours"),
-                social_links=loc.get("social_links")
-            )
-            for loc in locations
-        ])
-        
         map_section = ""
         if show_map:
-            map_section = """
+            map_section = (
+                """
             <section class="mt-20" id ="map">
                 <h2 class="text-3xl font-bold text-center mb-12">Localisation</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                """ + locations_html + """
+                """
+                + locations_html
+                + """
                 </div>
             </section>
             """
-        
+            )
+
         if faq is None:
             faq = [
                 {
                     "question": "Comment puis-je vous contacter ?",
-                    "answer": "Nous vous invitons à nous contacter par email ou par téléphone."
+                    "answer": "Nous vous invitons à nous contacter par email ou par téléphone.",
                 },
                 {
                     "question": "Quelles sont vos heures d'ouverture ?",
-                    "answer": "Nous sommes ouverts du lundi au vendredi de 9h00 à 18h00."
-                }
-        ] 
-
+                    "answer": "Nous sommes ouverts du lundi au vendredi de 9h00 à 18h00.",
+                },
+            ]
 
         html_faq = ""
         for faq_item in faq:
@@ -630,10 +664,11 @@ class Contact:
                     <p class="text-sm text-base-content/70">{}</p>
                 </div>
             </div>
-            """.format(faq_item.get("question"), faq_item.get("answer"))
+            """.format(
+                faq_item.get("question"), faq_item.get("answer")
+            )
 
-
-        faq_section =f"""
+        faq_section = f"""
         <section class="mt-20" id="faq">
             <h2 class="text-3xl font-bold text-center mb-12">Faq</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -641,7 +676,8 @@ class Contact:
             </div>
         </section>
         """
-        return Markup(f"""
+        return Markup(
+            f"""
         <div class="min-h-screen bg-gradient-to-b from-base-100 to-base-200">
             <!-- Hero Section -->
             <section class="py-20 px-4 text-center">
@@ -658,13 +694,20 @@ class Contact:
                     
                     <div class="space-y-6">
                         {Contact.contact_info_card(
-                            title=  direct_contact.get("title", "Call To action"), #"call to action",
-                            phone=  direct_contact.get("phone", "+33 1 23 45 67 89"), #"+33 1 23 45 67 89",
-                            email=  direct_contact.get("email", "contact@example.com"), #"contact@example.com",
-                            address=  direct_contact.get("address", "123 Avenue des Champs, 75000 Paris, France"), #"123 Avenue des Champs, 75000 Paris, France",
-                            hours=  direct_contact.get("hours", "Lun-Ven: 9h-18h<br/>Sam-Dim: Fermé"), #"Lun-Ven: 9h-18h<br/>Sam-Dim: Fermé",
-                            social_links=social_links
-                        )}
+            title=direct_contact.get(
+                "title", "Call To action"),  # "call to action",
+            # "+33 1 23 45 67 89",
+            phone=direct_contact.get("phone", "+33 1 23 45 67 89"),
+            # "contact@example.com",
+            email=direct_contact.get("email", "contact@example.com"),
+            # "123 Avenue des Champs, 75000 Paris, France",
+            address=direct_contact.get(
+                "address", "123 Avenue des Champs, 75000 Paris, France"),
+            # "Lun-Ven: 9h-18h<br/>Sam-Dim: Fermé",
+            hours=direct_contact.get(
+                "hours", "Lun-Ven: 9h-18h<br/>Sam-Dim: Fermé"),
+            social_links=social_links
+        )}
                     </div>
                 </div>
             </section>
@@ -673,16 +716,17 @@ class Contact:
             
             {faq_section}
         </div>
-        """)
-    
+        """
+        )
+
     @staticmethod
     def contact_modal(
-        modal_id: str = "contact-modal",
-        form_action: str = "/contact/send"
+        modal_id: str = "contact-modal", form_action: str = "/contact/send"
     ) -> Markup:
         """Modal de contact"""
-        
-        return Markup(f"""
+
+        return Markup(
+            f"""
         <dialog id="{modal_id}" class="modal">
             <div class="modal-box w-full max-w-md">
                 <h3 class="font-bold text-lg mb-6">Nous contacter</h3>
@@ -731,5 +775,5 @@ class Contact:
                 <button>close</button>
             </form>
         </dialog>
-        """)
-
+        """
+        )

@@ -1,9 +1,15 @@
-from .base import LoginConfig, RegisterConfig, ProfileConfig, UsersManagementConfig, SettingsConfig, AuthComponents
 from .authpage import AuthPages
+from .base import (
+    AuthComponents,
+    LoginConfig,
+    ProfileConfig,
+    RegisterConfig,
+    SettingsConfig,
+    UsersManagementConfig,
+)
 from .profilePage import ProfilePages
-from .userManager import UsersManagement
 from .settings import SettingsPages
-
+from .userManager import UsersManagement
 
 __all__ = [
     "LoginConfig",

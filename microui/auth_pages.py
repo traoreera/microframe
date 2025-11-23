@@ -23,25 +23,25 @@ class AuthPages:
         <div class="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4">
             <div class="w-full max-w-md">
                 {Card.render(
-            title="Connexion",
-            body=f'''
+                title="Connexion",
+                body=f'''
                         {error_html}
                         <form method="POST" action="{form_action}" class="space-y-4">
                             {Input.render(
-                name="email",
-                type="email",
-                label="Email",
-                placeholder="votre@email.com",
-                classes="mb-4"
-            )}
+                    name="email",
+                    type="email",
+                    label="Email",
+                    placeholder="votre@email.com",
+                    classes="mb-4"
+                )}
                             
                             {Input.render(
-                name="password",
-                type="password",
-                label="Mot de passe",
-                placeholder="••••••••",
-                classes="mb-6"
-            )}
+                    name="password",
+                    type="password",
+                    label="Mot de passe",
+                    placeholder="••••••••",
+                    classes="mb-6"
+                )}
                             
                             <div class="form-control">
                                 <label class="label cursor-pointer">
@@ -51,12 +51,12 @@ class AuthPages:
                             </div>
                             
                             {Button.render(
-                text="Se connecter",
-                variant="primary",
-                size="md",
-                block=True,
-                classes="mt-6"
-            )}
+                    text="Se connecter",
+                    variant="primary",
+                    size="md",
+                    block=True,
+                    classes="mt-6"
+                )}
                         </form>
                         
                         <div class="divider">OU</div>
@@ -76,8 +76,8 @@ class AuthPages:
                             </button>
                         </div>
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
                 
                 <div class="text-center mt-6">
                     <p class="text-sm text-base-content/70">
@@ -99,41 +99,41 @@ class AuthPages:
         <div class="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4">
             <div class="w-full max-w-md">
                 {Card.render(
-            title="Créer un compte",
-            body=f'''
+                title="Créer un compte",
+                body=f'''
                         {error_html}
                         <form method="POST" action="{form_action}" class="space-y-3">
                             {Input.render(
-                name="full_name",
-                type="text",
-                label="Nom complet",
-                placeholder="Jean Dupont",
-                classes="mb-3"
-            )}
+                    name="full_name",
+                    type="text",
+                    label="Nom complet",
+                    placeholder="Jean Dupont",
+                    classes="mb-3"
+                )}
                             
                             {Input.render(
-                name="email",
-                type="email",
-                label="Email",
-                placeholder="votre@email.com",
-                classes="mb-3"
-            )}
+                    name="email",
+                    type="email",
+                    label="Email",
+                    placeholder="votre@email.com",
+                    classes="mb-3"
+                )}
                             
                             {Input.render(
-                name="password",
-                type="password",
-                label="Mot de passe",
-                placeholder="••••••••",
-                classes="mb-3"
-            )}
+                    name="password",
+                    type="password",
+                    label="Mot de passe",
+                    placeholder="••••••••",
+                    classes="mb-3"
+                )}
                             
                             {Input.render(
-                name="confirm_password",
-                type="password",
-                label="Confirmer le mot de passe",
-                placeholder="••••••••",
-                classes="mb-4"
-            )}
+                    name="confirm_password",
+                    type="password",
+                    label="Confirmer le mot de passe",
+                    placeholder="••••••••",
+                    classes="mb-4"
+                )}
                             
                             <div class="form-control mb-4">
                                 <label class="label cursor-pointer">
@@ -143,16 +143,16 @@ class AuthPages:
                             </div>
                             
                             {Button.render(
-                text="Créer mon compte",
-                variant="primary",
-                size="md",
-                block=True,
-                classes="mt-6"
-            )}
+                    text="Créer mon compte",
+                    variant="primary",
+                    size="md",
+                    block=True,
+                    classes="mt-6"
+                )}
                         </form>
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
                 
                 <div class="text-center mt-6">
                     <p class="text-sm text-base-content/70">
@@ -172,31 +172,31 @@ class AuthPages:
         <div class="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4">
             <div class="w-full max-w-md">
                 {Card.render(
-            title="Réinitialiser le mot de passe",
-            body=f'''
+                title="Réinitialiser le mot de passe",
+                body=f'''
                         <p class="text-sm text-base-content/70 mb-4">
                             Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
                         </p>
                         
                         <form method="POST" action="{form_action}" class="space-y-4">
                             {Input.render(
-                name="email",
-                type="email",
-                label="Email",
-                placeholder="votre@email.com",
-                classes="mb-6"
-            )}
+                    name="email",
+                    type="email",
+                    label="Email",
+                    placeholder="votre@email.com",
+                    classes="mb-6"
+                )}
                             
                             {Button.render(
-                text="Envoyer le lien",
-                variant="primary",
-                size="md",
-                block=True
-            )}
+                    text="Envoyer le lien",
+                    variant="primary",
+                    size="md",
+                    block=True
+                )}
                         </form>
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
                 
                 <div class="text-center mt-6">
                     <a href="/auth/login" class="link link-primary text-sm">Retour à la connexion</a>
@@ -223,16 +223,16 @@ class AuthPages:
                 </div>
                 
                 {Card.render(
-            title="Mon Profil",
-            body=f'''
+                title="Mon Profil",
+                body=f'''
                         <div class="flex flex-col md:flex-row gap-6 mb-6">
                             <div class="flex flex-col items-center gap-4">
                                 {Avatar.render(
-                src=user.get(
-                    "avatar", "https://api.dicebear.com/7.x/avataaars/svg?seed=default"),
-                alt=user.get("full_name", "Utilisateur"),
-                size="lg"
-            )}
+                    src=user.get(
+                        "avatar", "https://api.dicebear.com/7.x/avataaars/svg?seed=default"),
+                    alt=user.get("full_name", "Utilisateur"),
+                    size="lg"
+                )}
                                 <label class="btn btn-sm btn-outline">
                                     <input type="file" class="hidden" accept="image/*" />
                                     Changer la photo
@@ -255,34 +255,34 @@ class AuthPages:
                         <form method="POST" action="{form_action}" class="space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {Input.render(
-                name="full_name",
-                type="text",
-                label="Nom complet",
-                value=user.get("full_name", ""),
-                classes="md:col-span-2"
-            )}
+                    name="full_name",
+                    type="text",
+                    label="Nom complet",
+                    value=user.get("full_name", ""),
+                    classes="md:col-span-2"
+                )}
                                 
                                 {Input.render(
-                name="email",
-                type="email",
-                label="Email",
-                value=user.get("email", ""),
-                classes="md:col-span-2"
-            )}
+                    name="email",
+                    type="email",
+                    label="Email",
+                    value=user.get("email", ""),
+                    classes="md:col-span-2"
+                )}
                                 
                                 {Input.render(
-                name="phone",
-                type="tel",
-                label="Téléphone",
-                value=user.get("phone", "")
-            )}
+                    name="phone",
+                    type="tel",
+                    label="Téléphone",
+                    value=user.get("phone", "")
+                )}
                                 
                                 {Input.render(
-                name="city",
-                type="text",
-                label="Ville",
-                value=user.get("city", "")
-            )}
+                    name="city",
+                    type="text",
+                    label="Ville",
+                    value=user.get("city", "")
+                )}
                             </div>
                             
                             <div class="form-control">
@@ -293,20 +293,20 @@ class AuthPages:
                             </div>
                             
                             {Button.render(
-                text="Enregistrer les modifications",
-                variant="primary",
-                block=True,
-                classes="mt-6"
-            )}
+                    text="Enregistrer les modifications",
+                    variant="primary",
+                    block=True,
+                    classes="mt-6"
+                )}
                         </form>
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
                 
                 <div class="mt-6 space-y-4">
                     {Card.render(
-            title="Sécurité",
-            body='''
+                title="Sécurité",
+                body='''
                             <div class="space-y-3">
                                 <button class="btn btn-outline btn-block">
                                     Changer le mot de passe
@@ -319,8 +319,8 @@ class AuthPages:
                                 </button>
                             </div>
                         ''',
-            classes="shadow"
-        )}
+                classes="shadow"
+            )}
                 </div>
             </div>
         </div>
@@ -386,24 +386,24 @@ class AuthPages:
                 </div>
                 
                 {Card.render(
-            body=f'''
+                body=f'''
                         <div class="mb-4 flex gap-2">
                             <input type="text" placeholder="Rechercher..." class="input input-bordered flex-1" />
                             <button class="btn btn-outline">Rechercher</button>
                         </div>
                         
                         {Table.render(
-                headers=headers,
-                rows=rows,
-                zebra=True,
-                hoverable=True,
-                classes="w-full"
-            )}
+                    headers=headers,
+                    rows=rows,
+                    zebra=True,
+                    hoverable=True,
+                    classes="w-full"
+                )}
                         
                         {pagination}
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
             </div>
         </div>
         """
@@ -426,24 +426,24 @@ class AuthPages:
                 </div>
                 
                 {Card.render(
-            title=title,
-            body=f'''
+                title=title,
+                body=f'''
                         <form method="POST" action="{form_action}" class="space-y-4">
                             {Input.render(
-                name="full_name",
-                type="text",
-                label="Nom complet",
-                value=user.get("full_name", "") if user else "",
-                classes="mb-4"
-            )}
+                    name="full_name",
+                    type="text",
+                    label="Nom complet",
+                    value=user.get("full_name", "") if user else "",
+                    classes="mb-4"
+                )}
                             
                             {Input.render(
-                name="email",
-                type="email",
-                label="Email",
-                value=user.get("email", "") if user else "",
-                classes="mb-4"
-            )}
+                    name="email",
+                    type="email",
+                    label="Email",
+                    value=user.get("email", "") if user else "",
+                    classes="mb-4"
+                )}
                             
                             <div class="form-control mb-4">
                                 <label class="label">
@@ -451,16 +451,16 @@ class AuthPages:
                                 </label>
                                 <select class="select select-bordered" name="role" required>
                                     <option value="user" {
-                'selected' if user and user.get("role") == "user" else ''
-            }>Utilisateur</option>
+                    'selected' if user and user.get("role") == "user" else ''
+                }>Utilisateur</option>
                                     <option value="moderator" {
-                'selected' if user and user.get(
-                    "role") == "moderator" else ''
-            }>Modérateur</option>
+                    'selected' if user and user.get(
+                        "role") == "moderator" else ''
+                }>Modérateur</option>
                                     <option value="admin" {
-                'selected' if user and user.get(
-                    "role") == "admin" else ''
-            }>Administrateur</option>
+                    'selected' if user and user.get(
+                        "role") == "admin" else ''
+                }>Administrateur</option>
                                 </select>
                             </div>
                             
@@ -470,44 +470,44 @@ class AuthPages:
                                 </label>
                                 <select class="select select-bordered" name="status" required>
                                     <option value="actif" {
-                'selected' if user and user.get(
-                    "status") == "actif" else ''
-            }>Actif</option>
+                    'selected' if user and user.get(
+                        "status") == "actif" else ''
+                }>Actif</option>
                                     <option value="inactif" {
-                'selected' if user and user.get(
-                    "status") == "inactif" else ''
-            }>Inactif</option>
+                    'selected' if user and user.get(
+                        "status") == "inactif" else ''
+                }>Inactif</option>
                                     <option value="suspendu" {
-                'selected' if user and user.get(
-                    "status") == "suspendu" else ''
-            }>Suspendu</option>
+                    'selected' if user and user.get(
+                        "status") == "suspendu" else ''
+                }>Suspendu</option>
                                 </select>
                             </div>
                             
                             {
-                '' if is_edit else f'''
+                    '' if is_edit else f'''
                                 {Input.render(
-                    name="password",
-                    type="password",
-                    label="Mot de passe",
-                    placeholder="••••••••",
-                    classes="mb-4"
-                )}
+                        name="password",
+                        type="password",
+                        label="Mot de passe",
+                        placeholder="••••••••",
+                        classes="mb-4"
+                    )}
                                 '''
-            }
+                }
                             
                             <div class="flex gap-2 mt-6">
                                 {Button.render(
-                text="Enregistrer",
-                variant="primary",
-                classes="flex-1"
-            )}
+                    text="Enregistrer",
+                    variant="primary",
+                    classes="flex-1"
+                )}
                                 <a href="/admin/users" class="btn flex-1">Annuler</a>
                             </div>
                         </form>
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
             </div>
         </div>
         """
@@ -528,24 +528,24 @@ class SettingsPage:
                 <h1 class="text-3xl font-bold mb-6">Paramètres généraux</h1>
                 
                 {Card.render(
-            title="Paramètres de l'application",
-            body=f'''
+                title="Paramètres de l'application",
+                body=f'''
                         <form method="POST" action="{form_action}" class="space-y-4">
                             {Input.render(
-                name="app_name",
-                type="text",
-                label="Nom de l'application",
-                value=settings.get("app_name", ""),
-                classes="mb-4"
-            )}
+                    name="app_name",
+                    type="text",
+                    label="Nom de l'application",
+                    value=settings.get("app_name", ""),
+                    classes="mb-4"
+                )}
                             
                             {Input.render(
-                name="app_description",
-                type="text",
-                label="Description",
-                value=settings.get("app_description", ""),
-                classes="mb-4"
-            )}
+                    name="app_description",
+                    type="text",
+                    label="Description",
+                    value=settings.get("app_description", ""),
+                    classes="mb-4"
+                )}
                             
                             <div class="form-control mb-4">
                                 <label class="label">
@@ -567,14 +567,14 @@ class SettingsPage:
                             </div>
                             
                             {Button.render(
-                text="Enregistrer les paramètres",
-                variant="primary",
-                block=True
-            )}
+                    text="Enregistrer les paramètres",
+                    variant="primary",
+                    block=True
+                )}
                         </form>
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
             </div>
         </div>
         """
@@ -590,65 +590,65 @@ class SettingsPage:
                 <h1 class="text-3xl font-bold mb-6">Paramètres d'email</h1>
                 
                 {Card.render(
-            title="Configuration SMTP",
-            body=f'''
+                title="Configuration SMTP",
+                body=f'''
                         <form method="POST" action="{form_action}" class="space-y-4">
                             {Input.render(
-                name="smtp_host",
-                type="text",
-                label="Serveur SMTP",
-                value=settings.get("smtp_host", ""),
-                placeholder="smtp.gmail.com",
-                classes="mb-4"
-            )}
+                    name="smtp_host",
+                    type="text",
+                    label="Serveur SMTP",
+                    value=settings.get("smtp_host", ""),
+                    placeholder="smtp.gmail.com",
+                    classes="mb-4"
+                )}
                             
                             {Input.render(
-                name="smtp_port",
-                type="number",
-                label="Port",
-                value=settings.get("smtp_port", "587"),
-                classes="mb-4"
-            )}
+                    name="smtp_port",
+                    type="number",
+                    label="Port",
+                    value=settings.get("smtp_port", "587"),
+                    classes="mb-4"
+                )}
                             
                             {Input.render(
-                name="smtp_user",
-                type="email",
-                label="Email",
-                value=settings.get("smtp_user", ""),
-                classes="mb-4"
-            )}
+                    name="smtp_user",
+                    type="email",
+                    label="Email",
+                    value=settings.get("smtp_user", ""),
+                    classes="mb-4"
+                )}
                             
                             {Input.render(
-                name="smtp_password",
-                type="password",
-                label="Mot de passe",
-                placeholder="••••••••",
-                classes="mb-4"
-            )}
+                    name="smtp_password",
+                    type="password",
+                    label="Mot de passe",
+                    placeholder="••••••••",
+                    classes="mb-4"
+                )}
                             
                             {Input.render(
-                name="from_email",
-                type="email",
-                label="Email d'envoi",
-                value=settings.get("from_email", ""),
-                classes="mb-6"
-            )}
+                    name="from_email",
+                    type="email",
+                    label="Email d'envoi",
+                    value=settings.get("from_email", ""),
+                    classes="mb-6"
+                )}
                             
                             {Button.render(
-                text="Tester la connexion",
-                variant="outline",
-                classes="mb-4 w-full"
-            )}
+                    text="Tester la connexion",
+                    variant="outline",
+                    classes="mb-4 w-full"
+                )}
                             
                             {Button.render(
-                text="Enregistrer les paramètres",
-                variant="primary",
-                block=True
-            )}
+                    text="Enregistrer les paramètres",
+                    variant="primary",
+                    block=True
+                )}
                         </form>
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
             </div>
         </div>
         """

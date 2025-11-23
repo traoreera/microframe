@@ -1,18 +1,22 @@
 """
 Full page layouts: Dashboard, Landing, Kanban, Ecommerce
 """
-from typing import Dict, List, Optional
+
+from typing import Dict, List
 
 from markupsafe import Markup
-from .daisy_ui_kit import Avatar, Card, DaisyUI, Alert, Input, Button, Badge, Navbar
-from .layout import Pricing, Contact
+
+from .daisy_ui_kit import Alert, Avatar, Badge, Button, Card, DaisyUI, Input, Navbar
+from .layout import Contact, Pricing
 from .utils import build_menu_items
 
 
 class DashBordLayout:
     """Dashboard layout with sidebar navigation"""
-    
-    def __init__(self,):
+
+    def __init__(
+        self,
+    ):
         pass
 
     @staticmethod
@@ -23,7 +27,7 @@ class DashBordLayout:
         notifications_count: int = 0,
         theme: str = "light",
         avatar: str = "",
-        user_name: str = ""
+        user_name: str = "",
     ) -> Markup:
         """Render complete dashboard layout"""
         if not sidebar_items:
@@ -43,7 +47,7 @@ class DashBordLayout:
             size="sm",
             shape="circle",
             online=True,
-            placeholder=user_name[0] if user_name else "U"
+            placeholder=user_name[0] if user_name else "U",
         )
 
         return Markup(
@@ -127,7 +131,7 @@ class DashBordLayout:
 
 class LandingPage:
     """Landing page layout with hero, features, pricing, contact"""
-    
+
     def __init__(self) -> None:
         pass
 
@@ -145,44 +149,89 @@ class LandingPage:
         nav_links: list = ["features", "pricing", "contact", "faq"],
     ) -> Markup:
         """Render complete landing page"""
-        
+
         if not features:
             features = [
-                {"icon": "⚡", "title": "Rapide", "desc": "Performance optimale", "image": "https://picsum.photos/400/300?random=1"},
-                {"icon": "🎨", "title": "Moderne", "desc": "Design élégant", "image": "https://picsum.photos/400/300?random=2"},
-                {"icon": "🔒", "title": "Sécurisé", "desc": "Données protégées", "image": "https://picsum.photos/400/300?random=3"},
+                {
+                    "icon": "⚡",
+                    "title": "Rapide",
+                    "desc": "Performance optimale",
+                    "image": "https://picsum.photos/400/300?random=1",
+                },
+                {
+                    "icon": "🎨",
+                    "title": "Moderne",
+                    "desc": "Design élégant",
+                    "image": "https://picsum.photos/400/300?random=2",
+                },
+                {
+                    "icon": "🔒",
+                    "title": "Sécurisé",
+                    "desc": "Données protégées",
+                    "image": "https://picsum.photos/400/300?random=3",
+                },
             ]
-        
+
         if not pricing:
             pricing = [
-                {"name": "Free", "price": 0, "currency": "€", "cta_text": "Commencer", "features": ["5 projets", "Email support", "1GB storage"], "description": "Gratuit pour chaque utilisation", "featured": False},
-                {"name": "Starter", "price": 10, "currency": "€", "cta_text": "Commencer", "features": ["10 projets", "Priority support", "10GB storage"], "description": "Pour les équipes", "featured": True},
-                {"name": "Premium", "price": 20, "currency": "€", "cta_text": "Commencer", "features": ["Illimité", "24/7 support", "100GB storage"], "description": "Pour les entreprises", "featured": False}
+                {
+                    "name": "Free",
+                    "price": 0,
+                    "currency": "€",
+                    "cta_text": "Commencer",
+                    "features": ["5 projets", "Email support", "1GB storage"],
+                    "description": "Gratuit pour chaque utilisation",
+                    "featured": False,
+                },
+                {
+                    "name": "Starter",
+                    "price": 10,
+                    "currency": "€",
+                    "cta_text": "Commencer",
+                    "features": ["10 projets", "Priority support", "10GB storage"],
+                    "description": "Pour les équipes",
+                    "featured": True,
+                },
+                {
+                    "name": "Premium",
+                    "price": 20,
+                    "currency": "€",
+                    "cta_text": "Commencer",
+                    "features": ["Illimité", "24/7 support", "100GB storage"],
+                    "description": "Pour les entreprises",
+                    "featured": False,
+                },
             ]
-        
+
         if not locations:
             locations = [
-                {"name": "Bureau Principal", "phone": "+226 67 90 58 25", "email": "contact@example.com", "address": "123 Rue, Ville", "hours": "Lun-Ven: 9h-18h"}
+                {
+                    "name": "Bureau Principal",
+                    "phone": "+226 67 90 58 25",
+                    "email": "contact@example.com",
+                    "address": "123 Rue, Ville",
+                    "hours": "Lun-Ven: 9h-18h",
+                }
             ]
 
         # Build feature cards
-        feature_html = "".join([
-            Card.render(
-                title=f.get("title", ""),
-                body=f'<div class="text-center"><div class="text-4xl mb-4">{f["icon"]}</div><p>{f["desc"]}</p></div>',
-                image=f.get("image"),
-                bordered=True
-            )
-            for f in features
-        ])
-        
-        # Build pricing cards
-        price_html = "".join([
-            Pricing.simple_pricing_card(**p)
-            for p in pricing
-        ])
+        feature_html = "".join(
+            [
+                Card.render(
+                    title=f.get("title", ""),
+                    body=f'<div class="text-center"><div class="text-4xl mb-4">{f["icon"]}</div><p>{f["desc"]}</p></div>',
+                    image=f.get("image"),
+                    bordered=True,
+                )
+                for f in features
+            ]
+        )
 
-        return Markup(f"""
+        # Build pricing cards
+        price_html = "".join([Pricing.simple_pricing_card(**p) for p in pricing])
+
+        return Markup(
+            f"""
             <div class="navbar bg-base-100 sticky top-0 z-50 border-b border-base-300">
                 <div class="navbar-start">
                     <a class="btn btn-ghost text-xl">🚀 {title}</a>
@@ -244,39 +293,39 @@ class LandingPage:
                     <p>© 2024 - All rights reserved</p>
                 </div>
             </footer>
-        """)
+        """
+        )
 
 
 class KanbanLayout:
     """Kanban board layout"""
-    
+
     @staticmethod
-    def render(
-        title: str,
-        columns: List[Dict],
-        theme: str = "dark"
-    ) -> Markup:
+    def render(title: str, columns: List[Dict], theme: str = "dark") -> Markup:
         """Layout Kanban board"""
-        
+
         kanban_columns = []
         for column in columns:
             cards = []
-            for task in column.get('tasks', []):
-                cards.append(Card.render(
-                    title=task.get('title', ''),
-                    body=f"""
+            for task in column.get("tasks", []):
+                cards.append(
+                    Card.render(
+                        title=task.get("title", ""),
+                        body=f"""
                         <p class="text-sm">{task.get('description', '')}</p>
                         <div class="flex gap-2 mt-2 items-center">
                             {Badge.render(task.get('priority', 'Normal'), variant=task.get('priority_variant', 'neutral'), size="sm")}
                             {Avatar.render(task.get('assignee_avatar', ''), size="xs", shape="circle") if task.get('assignee_avatar') else ''}
                         </div>
                     """,
-                    compact=True,
-                    bordered=True,
-                    classes="mb-2 cursor-move hover:shadow-lg transition-shadow"
-                ))
-            
-            kanban_columns.append(f"""
+                        compact=True,
+                        bordered=True,
+                        classes="mb-2 cursor-move hover:shadow-lg transition-shadow",
+                    )
+                )
+
+            kanban_columns.append(
+                f"""
             <div class="flex-1 min-w-80">
                 <div class="card bg-base-200">
                     <div class="card-body">
@@ -290,14 +339,15 @@ class KanbanLayout:
                     </div>
                 </div>
             </div>
-            """)
-        
+            """
+            )
+
         content = f"""
         <div class="flex gap-4 overflow-x-auto pb-4">
             {''.join(kanban_columns)}
         </div>
         """
-        
+
         return DashBordLayout.render(
             title=title,
             user_name="User",
@@ -307,23 +357,23 @@ class KanbanLayout:
                 {"text": "Board", "href": "/kanban", "icon": "📋", "active": True},
                 {"text": "Liste", "href": "/tasks", "icon": "📝"},
                 {"text": "Calendrier", "href": "/calendar", "icon": "📅"},
-            ]
+            ],
         )
 
 
 class EcommerceLayout:
     """E-commerce layout with cart"""
-    
+
     @staticmethod
     def render(
         title: str,
         content: str,
         cart_count: int = 0,
         brand: str = "🛍️ Ma Boutique",
-        theme: str = "dark"
+        theme: str = "dark",
     ) -> Markup:
         """Layout e-commerce avec panier"""
-        
+
         navbar = Navbar.render(
             brand=brand,
             items=[
@@ -331,6 +381,7 @@ class EcommerceLayout:
                 {"text": "Produits", "href": "/products"},
                 {"text": "Catégories", "href": "/categories"},
                 {"text": "Promo", "href": "/promo"},
+                {"text": "Profile", "href": "/profile"},
             ],
             end_items=f"""
                 <div class="form-control">
@@ -347,10 +398,11 @@ class EcommerceLayout:
                 </div>
                 
                 {DaisyUI.theme_switcher(theme)}
-            """
+            """,
         )
-        
-        return Markup(f"""
+
+        return Markup(
+            f"""
         {navbar}
         
         <div class="container mx-auto px-4 py-8">
@@ -375,4 +427,5 @@ class EcommerceLayout:
                 <a class="link link-hover">Politique de confidentialité</a>
             </div>
         </footer>
-        """)
+        """
+        )

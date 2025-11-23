@@ -98,7 +98,6 @@ def create_theme_routes(router):
         return {"theme": theme}
 
 
-
 # Exemple d'utilisation dans une application Starlette
 def setup_daisy_ui(app, router=None):
     """Configure DaisyUI dans l'application"""
@@ -109,7 +108,6 @@ def setup_daisy_ui(app, router=None):
     # Créer les routes
     if router:
         create_theme_routes(router)
-
 
 
 # Helpers pour les templates Jinja2

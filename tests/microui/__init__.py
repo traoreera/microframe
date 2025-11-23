@@ -1,0 +1,3 @@
+"""
+MicroUI component tests
+"""

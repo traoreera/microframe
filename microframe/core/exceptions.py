@@ -72,3 +72,13 @@ class ForbiddenException(HTTPException):
 
     def __call__(self, request: Any) -> dict:
         return self.to_dict()
+
+
+class BadRequestException(HTTPException):
+    """Bad request exception"""
+
+    def __init__(self, message: str = "Bad request"):
+        super().__init__(message, status_code=400)
+
+    def __call__(self, request: Any) -> dict:
+        return self.to_dict()
