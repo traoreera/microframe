@@ -113,3 +113,14 @@ routes = [
 * Rooms are implemented as sets (`rooms: Dict[room_name, Set[user_id]]`)
 * Designed for **async and concurrent environments**
 * Works with any AuthManager compliant with `AuthX`
+
+---
+
+## 📖 Navigation
+
+**Documentation WebSocket** :
+- [WebSocket Manager](websocket.md)
+
+---
+
+**[↑ Index Principal](../README.md)** | **[📚 Guide WebSocket](../guides/websocket-chat.md)**

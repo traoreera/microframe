@@ -151,3 +151,22 @@ It ensures consistent behavior, security enforcement, and flexibility across dif
     <li><a href= "./model.md"> Model</a></li>
   </ul>
 </nav>
+
+---
+
+## 📖 Navigation
+
+**Documentation AuthX** :
+- [Introduction](intro.md)
+- [Configuration](config.md)
+- [JWT Tokens](jwt.md)
+- [Auth Manager](manager.md)
+- [Models](model.md)
+- [Exceptions](exceptions.md)
+- [Dependencies](dependencies.md)
+- [Security](security.md)
+- [License](LICENSE.md)
+
+---
+
+**[↑ Index Principal](../README.md)** | **[📚 Guide Authentication](../guides/authentication.md)**

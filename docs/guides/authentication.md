@@ -160,7 +160,7 @@ async def login(request, credentials: LoginRequest, auth_manager, auth_config):
 Dans `app.py` :
 
 ```python
-from microframe import Application
+from microframe import Application, AppConfig
 from microframe.authx import AuthConfig
 from auth_config import auth_config
 from auth_manager import MyAuthManager
@@ -168,8 +168,10 @@ from routes.auth import router as auth_router
 
 # Créer l'app
 app = Application(
+    AppConfig(
     title="API avec Authentification",
     version="1.0.0"
+    )
 )
 
 # Injecter auth_config et auth_manager dans app.state

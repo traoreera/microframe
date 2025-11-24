@@ -48,13 +48,15 @@ python -c "import microframe; print(microframe.__version__)"
 Créez `app.py` :
 
 ```python
-from microframe import Application
+from microframe import Application, AppConfig
 
 # Créer l'application
 app = Application(
+    AppConfig(
     title="Ma Première API",
     version="1.0.0",
     description="Une API simple avec MicroFrame"
+    )
 )
 
 # Route simple

@@ -173,3 +173,21 @@ Example output after decoding:
   </ul>
 </nav>
 
+---
+
+## 📖 Navigation
+
+**Documentation AuthX** :
+- [Introduction](intro.md)
+- [Configuration](config.md)
+- [JWT Tokens](jwt.md)
+- [Auth Manager](manager.md)
+- [Models](model.md)
+- [Exceptions](exceptions.md)
+- [Dependencies](dependencies.md)
+- [Security](security.md)
+- [License](LICENSE.md)
+
+---
+
+**[↑ Index Principal](../README.md)** | **[📚 Guide Authentication](../guides/authentication.md)**

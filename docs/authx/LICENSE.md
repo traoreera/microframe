@@ -18,3 +18,22 @@ FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
 AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+## 📖 Navigation
+
+**Documentation AuthX** :
+- [Introduction](intro.md)
+- [Configuration](config.md)
+- [JWT Tokens](jwt.md)
+- [Auth Manager](manager.md)
+- [Models](model.md)
+- [Exceptions](exceptions.md)
+- [Dependencies](dependencies.md)
+- [Security](security.md)
+- [License](LICENSE.md)
+
+---
+
+**[↑ Index Principal](../README.md)** | **[📚 Guide Authentication](../guides/authentication.md)**

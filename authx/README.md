@@ -14,8 +14,8 @@ pip install starlette-authx
 
 ```bash
 # Cloner le repo
-git clone https://github.com/yourusername/starlette-authx.git
-cd starlette-authx
+git clone https://github.com/yourusername/authx.git
+cd authx
 
 # Installer en mode développement
 pip install -e .
