@@ -16,7 +16,7 @@ from starlette.responses import (
     StreamingResponse,
 )
 from starlette.routing import Route
-
+from .exceptions import Unprocessable
 from ..dependencies import AppException, DependencyManager
 from ..docs import OpenAPIGenerator, ReDocUI, SwaggerUI
 from ..routing import RouteInfo
@@ -231,7 +231,10 @@ class Application(Starlette):
     async def _call_endpoint(self, func: Callable, kwargs: Dict):
         """Exécute un endpoint (sync/async)"""
         if inspect.iscoroutinefunction(func):
-            return await func(**kwargs)
+            try:
+                return await func(**kwargs)
+            except Exception as e:
+                return await self._app_exception_handler(None, AppException("Internal server error"))
         return func(**kwargs)
 
     # ============================================================

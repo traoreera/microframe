@@ -62,9 +62,9 @@ class RequestParser:
                 try:
                     params[param_name] = annotation(**body_data)
                 except ValidationError as e:
-                    raise ValidationException(
+                    return  ValidationException(
                         message="Request validation failed", errors=e.errors()
-                    )
+                    ).to_dict()
 
             # Path parameter
             elif param_name in path_params:

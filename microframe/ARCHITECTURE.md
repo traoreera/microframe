@@ -1,8 +1,8 @@
-# Architecture Modulaire - MicroFramework v2.0 :old-arch
+# Architecture Modulaire - MicroFramework v2.0
 
 ## Vue d'ensemble
 
-Le framework a été entièrement refactorisé avec une architecture modulaire claire qui sépare les responsabilités et facilite la maintenance et l'évolution du code.
+Le framework a été entièrement refactorisé avec une architecture modulaire claire qui sépare les responsabilités et facilite la maintenance et l'évolution du code. Cette architecture suit les principes SOLID et offre une extensibilité maximale.
 
 ## Structure des modules
 
@@ -10,34 +10,63 @@ Le framework a été entièrement refactorisé avec une architecture modulaire c
 microframe/
 ├── core/                   # Module central
 │   ├── application.py      # Classe Application principale
-│   ├── config.py           # Configuration centralisée
+│   ├── config.py           # Configuration centralisée (AppConfig)
 │   └── exceptions.py       # Exceptions personnalisées
 │
-├── http/                   # Gestion HTTP
-│   └── handlers.py         # Gestionnaires de requêtes et exceptions
-│
 ├── routing/                # Système de routing
-│   ├── router.py           # Router principal
-│   ├── models.py           # RouteInfo et modèles
+│   ├── router.py           # Router principal et logique de routing
+│   ├── models.py           # RouteInfo et modèles de routes
 │   ├── registry.py         # Registre des routes
-│   └── decorators.py       # Décorateurs de routes
+│   └── decorators.py       # Décorateurs de routes (@get, @post, etc.)
 │
 ├── dependencies/           # Injection de dépendances
-│   ├── manager.py          # Gestionnaire de dépendances
-│   └── models.py           # Classe Depends
+│   ├── manager.py          # Gestionnaire de dépendances et cache
+│   └── exceptionHandler.py # Gestion des exceptions de dépendances
 │
 ├── validation/             # Validation des requêtes
-│   └── parser.py           # Parser de requêtes
+│   └── parser.py           # Parser de requêtes et validation Pydantic
 │
 ├── middleware/             # Middlewares
 │   ├── cors.py             # CORS middleware
-│   └── security_middleware.py  # Security & rate limiting
+│   ├── security.py         # Security headers et protection
+│   └── security_middleware.py  # Rate limiting et sécurité avancée
 │
-├── docs/                   # Documentation
-│   ├── openapi.py          # Générateur OpenAPI
+├── docs/                   # Documentation automatique
+│   ├── openapi.py          # Générateur de schéma OpenAPI 3.0
 │   └── ui.py               # UI Swagger/ReDoc
 │
-└── __init__.py             # Exports publics
+├── engine/                 # Moteur de templates
+│   ├── engine.py           # Moteur de templates Jinja2
+│   ├── component.py        # Système de composants
+│   ├── filters.py          # Filtres Jinja personnalisés
+│   ├── globals.py          # Variables globales Jinja
+│   ├── helpers.py          # Fonctions utilitaires
+│   └── cache.py            # Cache de templates
+│
+├── configurations/         # Configurations modulaires
+│   ├── base.py             # Configuration de base
+│   ├── microframe.py       # Configuration du framework
+│   ├── jwtConf.py          # Configuration JWT
+│   ├── secure.py           # Configuration de sécurité
+│   ├── middleware.py       # Configuration middleware
+│   ├── deps.py             # Configuration dépendances
+│   └── manager.py          # Gestionnaire de configurations
+│
+├── ui/                     # Interface utilisateur
+│   ├── components.py       # Composants UI réutilisables
+│   ├── forms.py            # Gestion des formulaires
+│   ├── layouts.py          # Layouts de pages
+│   └── renderer.py         # Rendu des composants
+│
+├── utils/                  # Utilitaires
+│   ├── helpers.py          # Fonctions utilitaires
+│   ├── validators.py       # Validateurs personnalisés
+│   └── decorators.py       # Décorateurs utilitaires
+│
+├── schemas/                # Schémas de données
+│   └── base.py             # Schémas Pydantic de base
+│
+└── __init__.py             # Exports publics avec lazy loading
 ```
 
 ## Principes d'architecture

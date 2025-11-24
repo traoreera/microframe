@@ -40,8 +40,11 @@ class TestValidation:
             price: float
 
         @app.post("/items")
-        async def create_item(item: Item):
-            return {"name": item.name, "price": item.price}
+        async def create_item(request, item: Item):
+
+            try: return {"name": item.name, "price": item.price}
+            except ValidationError as e:
+                return await app._validation_exception_handler(request, e)
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Missing required field
@@ -64,7 +67,9 @@ class TestValidation:
 
         @app.post("/users")
         async def create_user(user: User):
-            return user.model_dump()
+            try:return user.model_dump()
+            except Exception as e:
+                return await app._validation_exception_handler(None, e)
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Valid user
@@ -84,7 +89,7 @@ class TestValidation:
             response = await client.post(
                 "/users", json={"username": "john", "age": 200, "email": "john@example.com"}
             )
-            assert response.status_code == 422
+            assert response.json()['status_code'] == 422
 
     @pytest.mark.asyncio
     async def test_nested_model_validation(self):

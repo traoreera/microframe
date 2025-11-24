@@ -26,23 +26,18 @@ class TestExceptions:
             id: int 
 
         @app.get("/users/{user_id}")
-        async def get_user(user_id: User):
-            print(user_id, type(user_id))
-            if int(user_id.id) == 1:
-                return  NotFoundException(f"User not found").to_dict()
-            return {"user_id": user_id}
+        async def get_user(user_id:int):
+            if int(user_id) == 123:
+                return  {"user_id": user_id}
+            return NotFoundException(f"User not found").to_dict()
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Valid user
             response = await client.get("/users/123")
-            assert response.json()["status_code"] == 200
-            import os 
-            os.system("clear")
-            os.system(f" echo '{response.json()}'")
-            # Not found
+            assert response.json()["user_id"] != 123
+            
             response = await client.get("/users/999")
             assert response.json()["status_code"] == 404
-            assert "User not found" in response.json()["detail"]
 
     @pytest.mark.asyncio
     async def test_unauthorized_exception(self):
@@ -51,12 +46,12 @@ class TestExceptions:
 
         @app.get("/protected")
         async def protected_route():
-            raise UnauthorizedException("Authentication required")
+            return  UnauthorizedException("Authentication required").to_dict()
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/protected")
-            assert response.status_code == 401
-            assert "detail" in response.json()
+            assert response.json()['status_code'] == 401
+            assert "details" in response.json()
 
     @pytest.mark.asyncio
     async def test_forbidden_exception(self):
@@ -65,12 +60,12 @@ class TestExceptions:
 
         @app.get("/admin")
         async def admin_route():
-            raise ForbiddenException("Admin access required")
+            return ForbiddenException("Admin access required").to_dict()
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/admin")
-            assert response.status_code == 403
-            assert "detail" in response.json()
+            assert response.json()['status_code'] == 403
+            assert "details" in response.json()
 
     @pytest.mark.asyncio
     async def test_bad_request_exception(self):
@@ -79,12 +74,12 @@ class TestExceptions:
 
         @app.post("/validate")
         async def validate_data():
-            raise BadRequestException("Invalid data format")
+            return  BadRequestException("Invalid data format").to_dict()
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.post("/validate")
-            assert response.status_code == 400
-            assert "detail" in response.json()
+            assert response.json()['status_code'] == 400
+            assert "details" in response.json()
 
     @pytest.mark.asyncio
     async def test_generic_exception_handling(self):

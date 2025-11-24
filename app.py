@@ -1,15 +1,35 @@
-from microframe import Application
-from microframe.core.exceptions import NotFoundException
-from pydantic import BaseModel
+from microframe import Application, Router
+
+
+
 app = Application()
+        
+        # Main API router
+api_router = Router(prefix="/api")
+        
+
+users_router = Router(prefix="/users", tags=["Users"])
+posts_router = Router(prefix="/posts", tags=["Posts"])
 
 
-class User(BaseModel):
-    id: int 
+@users_router.get("/")
+async def list_users():
+    return {"users": []}
 
-@app.get("/users/{user_id}")
-async def get_user(user_id: User):
-    print(user_id, type(user_id))
-    if int(user_id.id) == 1:
-        return  NotFoundException(f"User not found").to_dict()
+@users_router.get("/{user_id}")
+async def get_user(user_id: str):
     return {"user_id": user_id}
+
+        # Posts sub-router
+
+
+@posts_router.get("/")
+async def list_posts():
+    return {"posts": []}
+
+        # Include sub-routers
+api_router.include_router(users_router)
+api_router.include_router(posts_router)
+
+
+app.include_router(api_router, "/api")
