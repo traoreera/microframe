@@ -169,7 +169,7 @@ AuthX is engineered for real-world production workloads — simple to integrate,
 __version__ = "0.1.0"
 
 from authx.config import AuthConfig
-from authx.dependencies import Depends, get_current_user
+from authx.dependencies import get_current_user
 from authx.exceptions import (
     AuthException,
     CredentialsException,
@@ -184,7 +184,6 @@ from authx.security import hash_password, verify_password
 __all__ = [
     "AuthConfig",
     "AuthManager",
-    "Depends",
     "get_current_user",
     "TokenResponse",
     "UserResponse",

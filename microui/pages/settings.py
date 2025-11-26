@@ -77,20 +77,20 @@ class SettingsPages:
                 <h1 class="text-3xl font-bold mb-6">Paramètres</h1>
                 
                 {Card.render(
-            title="Paramètres de l'application",
-            body=f'''
+                title="Paramètres de l'application",
+                body=f'''
                         <form method="POST" action="{form_action}" class="space-y-4">
                             {form_fields}
                             
                             {Button.render(
-                text="Enregistrer les paramètres",
-                variant="primary",
-                block=True
-            )}
+                    text="Enregistrer les paramètres",
+                    variant="primary",
+                    block=True
+                )}
                         </form>
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
             </div>
         </div>
         """

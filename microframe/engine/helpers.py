@@ -7,7 +7,7 @@ from .engine import TemplateEngine
 
 
 def get_engine():
-    """ You can also use it with `Depends`"""
+    """You can also use it with `Depends`"""
     return TemplateEngine.instance()
 
 

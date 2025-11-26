@@ -1,9 +1,11 @@
 """
 Tests for Application core functionality
 """
+
 import pytest
 from httpx import AsyncClient
 from pydantic import BaseModel
+
 from microframe import Application, Router
 from microframe.core import AppConfig
 

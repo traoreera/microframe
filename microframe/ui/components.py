@@ -1,8 +1,9 @@
+from pathlib import Path
+
 import jinja2
 from jinja2 import nodes
 from jinja2.ext import Extension
 from markupsafe import Markup
-from pathlib import Path
 
 
 class ComponentRegistry:
@@ -15,6 +16,7 @@ class ComponentRegistry:
     @classmethod
     def get(cls, name: str):
         return cls._registry.get(name)
+
 
 class ComponentExtension(Extension):
     tags = {"component"}

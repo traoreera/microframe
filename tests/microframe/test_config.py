@@ -1,7 +1,9 @@
 """
 Tests for AppConfig
 """
+
 import pytest
+
 from microframe.core import AppConfig
 
 

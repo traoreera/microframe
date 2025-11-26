@@ -1,4 +1,3 @@
-
 from markupsafe import Markup  # type: ignore
 
 from microui.daisy_ui_kit import Alert, Button, Card, Input
@@ -52,25 +51,25 @@ class AuthPages:
         <div class="min-h-screen {bg_class} flex items-center justify-center p-4">
             <div class="w-full max-w-md">
                 {Card.render(
-            body=f'''
+                body=f'''
                         {AuthComponents.auth_header(title, subtitle, logo)}
                         <div id="result">{error_html}</div>
                         <form hx-post="{form_action}" hx-target="#result" hx-swap="innerHTML">
                             {Input.render(
-                name="email",
-                type="email",
-                label="Email",
-                placeholder="votre@email.com",
-                classes="mb-4"
-            )}
+                    name="email",
+                    type="email",
+                    label="Email",
+                    placeholder="votre@email.com",
+                    classes="mb-4"
+                )}
                             
                             {Input.render(
-                name="password",
-                type="password",
-                label="Mot de passe",
-                placeholder="••••••••",
-                classes="mb-4"
-            )}
+                    name="password",
+                    type="password",
+                    label="Mot de passe",
+                    placeholder="••••••••",
+                    classes="mb-4"
+                )}
                             
                             <div class="flex justify-between items-center mb-4">
                                 <a href="/auth/forgot-password" class="link link-primary text-sm">
@@ -81,17 +80,17 @@ class AuthPages:
                             {remember_me_html}
                             
                             {Button.render(
-                text="Se connecter",
-                variant="primary",
-                block=True,
-                classes="mt-6"
-            )}
+                    text="Se connecter",
+                    variant="primary",
+                    block=True,
+                    classes="mt-6"
+                )}
                         </form>
                         
                         {social_html}
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
                 
                 <div class="text-center mt-6">
                     <p class="text-sm text-base-content/70">
@@ -155,58 +154,58 @@ class AuthPages:
         <div class="min-h-screen {bg_class} flex items-center justify-center p-4">
             <div class="w-full max-w-md">
                 {Card.render(
-            body=f'''
+                body=f'''
                         {AuthComponents.auth_header(title, subtitle, logo)}
                         {error_html}
                         <form method="POST" action="{form_action}" class="space-y-3">
                             {Input.render(
-                name="full_name",
-                type="text",
-                label="Nom complet",
-                placeholder="Jean Dupont",
-                classes="mb-3"
-            )}
+                    name="full_name",
+                    type="text",
+                    label="Nom complet",
+                    placeholder="Jean Dupont",
+                    classes="mb-3"
+                )}
                             
                             {Input.render(
-                name="email",
-                type="email",
-                label="Email",
-                placeholder="votre@email.com",
-                classes="mb-3"
-            )}
+                    name="email",
+                    type="email",
+                    label="Email",
+                    placeholder="votre@email.com",
+                    classes="mb-3"
+                )}
                             
                             {phone_field}
                             
                             {Input.render(
-                name="password",
-                type="password",
-                label="Mot de passe",
-                placeholder="••••••••",
-                classes="mb-3"
-            )}
+                    name="password",
+                    type="password",
+                    label="Mot de passe",
+                    placeholder="••••••••",
+                    classes="mb-3"
+                )}
                             
                             {Input.render(
-                name="confirm_password",
-                type="password",
-                label="Confirmer le mot de passe",
-                placeholder="••••••••",
-                classes="mb-4"
-            )}
+                    name="confirm_password",
+                    type="password",
+                    label="Confirmer le mot de passe",
+                    placeholder="••••••••",
+                    classes="mb-4"
+                )}
                             
                             {terms_html}
                             
                             {Button.render(
-                text="Créer mon compte",
-                variant="primary",
-                block=True,
-                classes="mt-6"
-            )}
+                    text="Créer mon compte",
+                    variant="primary",
+                    block=True,
+                    classes="mt-6"
+                )}
                         </form>
                         
                         {social_html}
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
                 
                 <div class="text-center mt-6">
                     <p class="text-sm text-base-content/70">
@@ -227,30 +226,30 @@ class AuthPages:
         <div class="min-h-screen bg-gradient-to-br from-base-200 to-base-300 flex items-center justify-center p-4">
             <div class="w-full max-w-md">
                 {Card.render(
-            body=f'''
+                body=f'''
                         {AuthComponents.auth_header(
-                "Réinitialiser le mot de passe",
-                "Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe."
-            )}
+                    "Réinitialiser le mot de passe",
+                    "Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe."
+                )}
                         
                         <form method="POST" action="{form_action}" class="space-y-4">
                             {Input.render(
-                name="email",
-                type="email",
-                label="Email",
-                placeholder="votre@email.com",
-                classes="mb-6"
-            )}
+                    name="email",
+                    type="email",
+                    label="Email",
+                    placeholder="votre@email.com",
+                    classes="mb-6"
+                )}
                             
                             {Button.render(
-                text="Envoyer le lien",
-                variant="primary",
-                block=True
-            )}
+                    text="Envoyer le lien",
+                    variant="primary",
+                    block=True
+                )}
                         </form>
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
                 
                 <div class="text-center mt-6">
                     <a href="/auth/login" class="link link-primary text-sm">Retour à la connexion</a>

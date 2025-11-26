@@ -1,10 +1,18 @@
 """
 Integration tests for complete application flows
 """
+
 import pytest
 from httpx import AsyncClient
 from pydantic import BaseModel
-from microframe import Application, Router, Depends, AppConfig
+
+from microframe import AppConfig, Application, Depends, Router
+from microframe.exceptions.exception import (
+    BadRequestException,
+    ForbiddenException,
+    NotFoundException,
+    UnauthorizedException,
+)
 from microframe.middleware import CORSMiddleware
 
 
@@ -14,11 +22,20 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_full_crud_api(self):
         """Test complete CRUD API flow"""
+        from pydantic import BaseModel
+
+        from microframe import AppConfig, Application
+
+        app = Application()
+
         app = Application(AppConfig(title="Todo API", version="1.0.0"))
 
         # In-memory storage
         todos = {}
         next_id = 1
+
+        class Get_Todo(BaseModel):
+            id: int
 
         class Todo(BaseModel):
             title: str
@@ -31,38 +48,47 @@ class TestIntegration:
 
         @app.get("/todos")
         async def list_todos():
-            return {"todos": list(todos.values())}
+            return todos
 
         @app.post("/todos")
         async def create_todo(todo: Todo):
             nonlocal next_id
+
             todo_dict = {"id": next_id, **todo.model_dump()}
             todos[next_id] = todo_dict
             next_id += 1
             return todo_dict
 
         @app.get("/todos/{todo_id}")
-        async def get_todo(todo_id: int):
-            if todo_id not in todos:
-                from microframe.core.exceptions import NotFoundException
-                raise NotFoundException(f"Todo {todo_id} not found")
-            return todos[todo_id]
+        async def get_todo(
+            todo_id: int,
+        ):
+            for _, value in todos.items():
+                for k, v in value.items():
+                    if k == "id" and v == int(todo_id):
+                        return value
+
+            raise NotFoundException(f"Todo {todo_id} not found")
 
         @app.put("/todos/{todo_id}")
         async def update_todo(todo_id: int, todo: Todo):
-            if todo_id not in todos:
-                from microframe.core.exceptions import NotFoundException
-                raise NotFoundException(f"Todo {todo_id} not found")
-            todos[todo_id] = {"id": todo_id, **todo.model_dump()}
-            return todos[todo_id]
+            for _, value in todos.items():
+                for k, v in value.items():
+                    if k == "id" and v == int(todo_id):
+                        todos[todo_id] = {"id": todo_id, **todo.model_dump()}
+                        return todos[todo_id]
+
+            raise NotFoundException(f"Todo {todo_id} not found")
 
         @app.delete("/todos/{todo_id}")
         async def delete_todo(todo_id: int):
-            if todo_id not in todos:
-                from microframe.core.exceptions import NotFoundException
-                raise NotFoundException(f"Todo {todo_id} not found")
-            del todos[todo_id]
-            return {"message": "deleted"}
+
+            for key, value in todos.items():
+                for k, v in value.items():
+                    if k == "id" and v == int(todo_id):
+                        del todos[key]
+                        return {"message": "deleted"}
+            raise NotFoundException(f"Todo {todo_id} not found")
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # CREATE
@@ -75,9 +101,7 @@ class TestIntegration:
             assert todo1["title"] == "Buy groceries"
 
             # CREATE another
-            response = await client.post(
-                "/todos", json={"title": "Write code", "completed": True}
-            )
+            response = await client.post("/todos", json={"title": "Write code", "completed": True})
             assert response.status_code == 200
             todo2 = response.json()
             assert todo2["id"] == 2
@@ -86,7 +110,7 @@ class TestIntegration:
             response = await client.get("/todos")
             assert response.status_code == 200
             data = response.json()
-            assert len(data["todos"]) == 2
+            assert len(data) == 2
 
             # GET
             response = await client.get("/todos/1")
@@ -141,7 +165,7 @@ class TestIntegration:
         # Include routers
         v1_router.include_router(users_router)
         v1_router.include_router(posts_router)
-        app.include_router(v1_router)
+        app.include_router(v1_router, prefix="/api/v1")
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Test users
@@ -163,7 +187,7 @@ class TestIntegration:
     async def test_app_with_middleware_and_validation(self):
         """Test app with CORS middleware and validation"""
         app = Application()
-        
+
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["http://localhost:3000"],
@@ -202,9 +226,9 @@ class TestIntegration:
         """Test that OpenAPI docs are generated"""
         app = Application(
             AppConfig(
-            title="Test API",
-            version="1.0.0",
-            description="Test Description",
+                title="Test API",
+                version="1.0.0",
+                description="Test Description",
             )
         )
 
@@ -238,6 +262,12 @@ class TestAdvancedIntegration:
     @pytest.mark.asyncio
     async def test_authentication_workflow(self):
         """Test complete authentication flow with token-based auth"""
+        from authx import AuthConfig, create_access_token, decode_token
+
+        authx_ = AuthConfig(
+            secret_key="votre-cle-secrete-min-32-caracteres",
+        )
+
         app = Application()
 
         # Mock user database
@@ -245,10 +275,10 @@ class TestAdvancedIntegration:
             "admin": {"password": "admin123", "role": "admin"},
             "user": {"password": "user123", "role": "user"},
         }
-        
+
         # Mock token storage
         tokens = {}
-        
+
         class LoginRequest(BaseModel):
             username: str
             password: str
@@ -261,30 +291,23 @@ class TestAdvancedIntegration:
             """Dependency to verify authentication token"""
             auth_header = request.headers.get("authorization", "")
             if not auth_header.startswith("Bearer "):
-                from microframe.core.exceptions import UnauthorizedException
+                from microframe.exceptions.exception import UnauthorizedException
+
                 raise UnauthorizedException("Invalid authentication")
-            
-            token = auth_header[7:]  # Remove "Bearer "
-            if token not in tokens:
-                from microframe.core.exceptions import UnauthorizedException
-                raise UnauthorizedException("Invalid token")
-            
-            return tokens[token]
+            return decode_token(auth_header[7:], authx_, "access")
 
         @app.post("/auth/login")
         async def login(credentials: LoginRequest):
             """Login endpoint"""
             user = users_db.get(credentials.username)
             if not user or user["password"] != credentials.password:
-                from microframe.core.exceptions import UnauthorizedException
+                from microframe.exceptions.exception import UnauthorizedException
+
                 raise UnauthorizedException("Invalid credentials")
-            
+
             # Generate simple token (in real app, use JWT)
-            import hashlib
-            import time
-            token = hashlib.sha256(f"{credentials.username}{time.time()}".encode()).hexdigest()
-            tokens[token] = {"username": credentials.username, "role": user["role"]}
-            
+            token = create_access_token(credentials.username, authx_)
+
             return {"access_token": token, "token_type": "bearer"}
 
         @app.get("/auth/me")
@@ -295,10 +318,11 @@ class TestAdvancedIntegration:
         @app.get("/admin/dashboard")
         async def admin_dashboard(user=Depends(verify_token)):
             """Admin-only endpoint"""
-            if user["role"] != "admin":
-                from microframe.core.exceptions import ForbiddenException
+            if user["sub"] != "admin":
+                from microframe.exceptions.exception import ForbiddenException
+
                 raise ForbiddenException("Admin access required")
-            return {"dashboard": "admin data", "user": user["username"]}
+            return {"dashboard": "admin data", "user": user["sub"]}
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Try accessing protected endpoint without auth (should fail)
@@ -307,15 +331,13 @@ class TestAdvancedIntegration:
 
             # Login with wrong credentials (should fail)
             response = await client.post(
-                "/auth/login",
-                json={"username": "admin", "password": "wrong"}
+                "/auth/login", json={"username": "admin", "password": "wrong"}
             )
             assert response.status_code == 401
 
             # Login with correct credentials
             response = await client.post(
-                "/auth/login",
-                json={"username": "admin", "password": "admin123"}
+                "/auth/login", json={"username": "admin", "password": "admin123"}
             )
             assert response.status_code == 200
             token_data = response.json()
@@ -323,10 +345,7 @@ class TestAdvancedIntegration:
             token = token_data["access_token"]
 
             # Access protected endpoint with token
-            response = await client.get(
-                "/auth/me",
-                headers={"Authorization": f"Bearer {token}"}
-            )
+            response = await client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
             assert response.status_code == 200
             user_data = response.json()
             assert user_data["user"]["username"] == "admin"
@@ -334,23 +353,20 @@ class TestAdvancedIntegration:
 
             # Access admin endpoint as admin
             response = await client.get(
-                "/admin/dashboard",
-                headers={"Authorization": f"Bearer {token}"}
+                "/admin/dashboard", headers={"Authorization": f"Bearer {token}"}
             )
             assert response.status_code == 200
 
             # Login as regular user
             response = await client.post(
-                "/auth/login",
-                json={"username": "user", "password": "user123"}
+                "/auth/login", json={"username": "user", "password": "user123"}
             )
             assert response.status_code == 200
             user_token = response.json()["access_token"]
 
             # Try to access admin endpoint as regular user (should fail)
             response = await client.get(
-                "/admin/dashboard",
-                headers={"Authorization": f"Bearer {user_token}"}
+                "/admin/dashboard", headers={"Authorization": f"Bearer {user_token}"}
             )
             assert response.status_code == 403
 
@@ -380,13 +396,13 @@ class TestAdvancedIntegration:
 
             # Filter products
             filtered = products.copy()
-            
+
             if category:
                 filtered = [p for p in filtered if p["category"] == category]
-            
+
             if min_price:
                 filtered = [p for p in filtered if p["price"] >= float(min_price)]
-            
+
             if max_price:
                 filtered = [p for p in filtered if p["price"] <= float(max_price)]
 
@@ -431,9 +447,7 @@ class TestAdvancedIntegration:
             assert data["page"] == 1
 
             # Combined filters
-            response = await client.get(
-                "/products?category=electronics&min_price=100&limit=2"
-            )
+            response = await client.get("/products?category=electronics&min_price=100&limit=2")
             assert response.status_code == 200
             data = response.json()
             assert len(data["products"]) == 2
@@ -449,7 +463,7 @@ class TestAdvancedIntegration:
             """Echo back custom headers"""
             custom_header = request.headers.get("x-custom-header", "not-found")
             user_agent = request.headers.get("user-agent", "unknown")
-            
+
             return {
                 "custom_header": custom_header,
                 "user_agent": user_agent,
@@ -459,13 +473,9 @@ class TestAdvancedIntegration:
         async def set_cookie():
             """Set a cookie in response"""
             from starlette.responses import JSONResponse
+
             response = JSONResponse({"message": "Cookie set"})
-            response.set_cookie(
-                key="session_id",
-                value="abc123xyz",
-                max_age=3600,
-                httponly=True
-            )
+            response.set_cookie(key="session_id", value="abc123xyz", max_age=3600, httponly=True)
             return response
 
         @app.get("/read-cookie")
@@ -476,10 +486,7 @@ class TestAdvancedIntegration:
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Test custom headers
-            response = await client.get(
-                "/headers",
-                headers={"X-Custom-Header": "test-value-123"}
-            )
+            response = await client.get("/headers", headers={"X-Custom-Header": "test-value-123"})
             assert response.status_code == 200
             data = response.json()
             assert data["custom_header"] == "test-value-123"
@@ -490,10 +497,7 @@ class TestAdvancedIntegration:
             assert "session_id" in response.cookies
 
             # Read cookie
-            response = await client.get(
-                "/read-cookie",
-                cookies={"session_id": "test-session-456"}
-            )
+            response = await client.get("/read-cookie", cookies={"session_id": "test-session-456"})
             assert response.status_code == 200
             assert response.json()["session_id"] == "test-session-456"
 
@@ -523,65 +527,66 @@ class TestAdvancedIntegration:
         async def register_user(user: UserRegister):
             """Step 1: Register a new user"""
             if user.username in users:
-                from microframe.core.exceptions import BadRequestException
+                from microframe.exceptions.exception import BadRequestException
+
                 raise BadRequestException("Username already exists")
-            
-            users[user.username] = {
-                "email": user.email,
-                "password": user.password,
-                "orders": []
-            }
+
+            users[user.username] = {"email": user.email, "password": user.password, "orders": []}
             return {"username": user.username, "email": user.email}
 
         @app.post("/users/{username}/orders")
         async def create_order(username: str, order: OrderCreate):
             """Step 2: Create order for user"""
             if username not in users:
-                from microframe.core.exceptions import NotFoundException
+                from microframe.exceptions.exception import NotFoundException
+
                 raise NotFoundException("User not found")
-            
+
             nonlocal next_order_id
             order_id = next_order_id
             next_order_id += 1
-            
+
             order_data = {
                 "id": order_id,
                 "username": username,
                 "product_id": order.product_id,
                 "quantity": order.quantity,
                 "status": "pending",
-                "total": order.quantity * 100  # Mock price
+                "total": order.quantity * 100,  # Mock price
             }
-            
+
             orders[order_id] = order_data
             users[username]["orders"].append(order_id)
-            
+
             return order_data
 
         @app.get("/users/{username}/orders")
         async def get_user_orders(username: str):
             """Step 3: Get all orders for user"""
             if username not in users:
-                from microframe.core.exceptions import NotFoundException
+                from microframe.exceptions.exception import NotFoundException
+
                 raise NotFoundException("User not found")
-            
+
             user_order_ids = users[username]["orders"]
             user_orders = [orders[oid] for oid in user_order_ids if oid in orders]
-            
+
             return {"orders": user_orders}
 
         @app.patch("/orders/{order_id}")
         async def update_order_status(order_id: int, update: OrderUpdate):
             """Step 4: Update order status"""
             if order_id not in orders:
-                from microframe.core.exceptions import NotFoundException
+                from microframe.exceptions.exception import NotFoundException
+
                 raise NotFoundException("Order not found")
-            
+
             valid_statuses = ["pending", "processing", "shipped", "delivered", "cancelled"]
             if update.status not in valid_statuses:
-                from microframe.core.exceptions import BadRequestException
+                from microframe.exceptions.exception import BadRequestException
+
                 raise BadRequestException(f"Invalid status. Must be one of {valid_statuses}")
-            
+
             orders[order_id]["status"] = update.status
             return orders[order_id]
 
@@ -589,29 +594,25 @@ class TestAdvancedIntegration:
         async def get_order(order_id: int):
             """Get order details"""
             if order_id not in orders:
-                from microframe.core.exceptions import NotFoundException
+                from microframe.exceptions.exception import NotFoundException
+
                 raise NotFoundException("Order not found")
             return orders[order_id]
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Complete workflow test
-            
+
             # Step 1: Register user
             response = await client.post(
                 "/users/register",
-                json={
-                    "username": "alice",
-                    "email": "alice@example.com",
-                    "password": "secret123"
-                }
+                json={"username": "alice", "email": "alice@example.com", "password": "secret123"},
             )
             assert response.status_code == 200
             assert response.json()["username"] == "alice"
 
             # Step 2: Create first order
             response = await client.post(
-                "/users/alice/orders",
-                json={"product_id": 101, "quantity": 2}
+                "/users/alice/orders", json={"product_id": 101, "quantity": 2}
             )
             assert response.status_code == 200
             order1 = response.json()
@@ -621,8 +622,7 @@ class TestAdvancedIntegration:
 
             # Step 3: Create second order
             response = await client.post(
-                "/users/alice/orders",
-                json={"product_id": 102, "quantity": 5}
+                "/users/alice/orders", json={"product_id": 102, "quantity": 5}
             )
             assert response.status_code == 200
             order2_id = response.json()["id"]
@@ -634,25 +634,16 @@ class TestAdvancedIntegration:
             assert len(user_orders) == 2
 
             # Step 5: Update order status to processing
-            response = await client.patch(
-                f"/orders/{order1_id}",
-                json={"status": "processing"}
-            )
+            response = await client.patch(f"/orders/{order1_id}", json={"status": "processing"})
             assert response.status_code == 200
             assert response.json()["status"] == "processing"
 
             # Step 6: Update to shipped
-            response = await client.patch(
-                f"/orders/{order1_id}",
-                json={"status": "shipped"}
-            )
+            response = await client.patch(f"/orders/{order1_id}", json={"status": "shipped"})
             assert response.status_code == 200
 
             # Step 7: Update to delivered
-            response = await client.patch(
-                f"/orders/{order1_id}",
-                json={"status": "delivered"}
-            )
+            response = await client.patch(f"/orders/{order1_id}", json={"status": "delivered"})
             assert response.status_code == 200
 
             # Step 8: Verify final order status
@@ -661,20 +652,13 @@ class TestAdvancedIntegration:
             assert response.json()["status"] == "delivered"
 
             # Test error: Try invalid status
-            response = await client.patch(
-                f"/orders/{order1_id}",
-                json={"status": "invalid-status"}
-            )
+            response = await client.patch(f"/orders/{order1_id}", json={"status": "invalid-status"})
             assert response.status_code == 400
 
             # Test error: Try to register duplicate user
             response = await client.post(
                 "/users/register",
-                json={
-                    "username": "alice",
-                    "email": "alice2@example.com",
-                    "password": "secret456"
-                }
+                json={"username": "alice", "email": "alice2@example.com", "password": "secret456"},
             )
             assert response.status_code == 400
 
@@ -685,22 +669,26 @@ class TestAdvancedIntegration:
 
         @app.get("/error/404")
         async def not_found_error():
-            from microframe.core.exceptions import NotFoundException
+            from microframe.exceptions.exception import NotFoundException
+
             raise NotFoundException("Resource not found")
 
         @app.get("/error/401")
         async def unauthorized_error():
-            from microframe.core.exceptions import UnauthorizedException
+            from microframe.exceptions.exception import UnauthorizedException
+
             raise UnauthorizedException("Unauthorized access")
 
         @app.get("/error/403")
         async def forbidden_error():
-            from microframe.core.exceptions import ForbiddenException
+            from microframe.exceptions.exception import ForbiddenException
+
             raise ForbiddenException("Forbidden")
 
         @app.get("/error/400")
         async def bad_request_error():
-            from microframe.core.exceptions import BadRequestException
+            from microframe.exceptions.exception import BadRequestException
+
             raise BadRequestException("Bad request")
 
         @app.get("/error/500")
@@ -740,11 +728,13 @@ class TestAdvancedIntegration:
         @app.get("/text")
         async def get_text():
             from starlette.responses import PlainTextResponse
+
             return PlainTextResponse("Plain text response")
 
         @app.get("/html")
         async def get_html():
             from starlette.responses import HTMLResponse
+
             return HTMLResponse("<h1>HTML Response</h1><p>Test content</p>")
 
         @app.post("/form")
@@ -753,7 +743,7 @@ class TestAdvancedIntegration:
             form_data = await request.form()
             return {
                 "received": dict(form_data),
-                "content_type": request.headers.get("content-type")
+                "content_type": request.headers.get("content-type"),
             }
 
         async with AsyncClient(app=app, base_url="http://test") as client:
@@ -777,8 +767,7 @@ class TestAdvancedIntegration:
 
             # Form data
             response = await client.post(
-                "/form",
-                data={"username": "john", "email": "john@example.com"}
+                "/form", data={"username": "john", "email": "john@example.com"}
             )
             assert response.status_code == 200
             data = response.json()
@@ -804,21 +793,14 @@ class TestAdvancedIntegration:
             """Create multiple items at once"""
             nonlocal next_id
             created = []
-            
+
             for item in request.items:
-                item_data = {
-                    "id": next_id,
-                    "name": item.name,
-                    "value": item.value
-                }
+                item_data = {"id": next_id, "name": item.name, "value": item.value}
                 items_db[next_id] = item_data
                 created.append(item_data)
                 next_id += 1
-            
-            return {
-                "created": len(created),
-                "items": created
-            }
+
+            return {"created": len(created), "items": created}
 
         @app.delete("/items/bulk")
         async def bulk_delete(request):
@@ -826,15 +808,12 @@ class TestAdvancedIntegration:
             body = await request.json()
             ids = body.get("ids", [])
             deleted = []
-            
+
             for item_id in ids:
                 if item_id in items_db:
                     deleted.append(items_db.pop(item_id))
-            
-            return {
-                "deleted": len(deleted),
-                "items": deleted
-            }
+
+            return {"deleted": len(deleted), "items": deleted}
 
         @app.patch("/items/bulk")
         async def bulk_update(request):
@@ -842,17 +821,14 @@ class TestAdvancedIntegration:
             body = await request.json()
             updates = body.get("updates", [])
             updated = []
-            
+
             for update in updates:
                 item_id = update.get("id")
                 if item_id in items_db:
                     items_db[item_id].update(update.get("changes", {}))
                     updated.append(items_db[item_id])
-            
-            return {
-                "updated": len(updated),
-                "items": updated
-            }
+
+            return {"updated": len(updated), "items": updated}
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Bulk create
@@ -864,7 +840,7 @@ class TestAdvancedIntegration:
                         {"name": "Item 2", "value": 200},
                         {"name": "Item 3", "value": 300},
                     ]
-                }
+                },
             )
             assert response.status_code == 200
             result = response.json()
@@ -879,16 +855,13 @@ class TestAdvancedIntegration:
                         {"id": 1, "changes": {"value": 150}},
                         {"id": 2, "changes": {"value": 250}},
                     ]
-                }
+                },
             )
             assert response.status_code == 200
             assert response.json()["updated"] == 2
 
             # Bulk delete
-            response = await client.delete(
-                "/items/bulk",
-                params={"ids": [1, 3]}
-            )
+            response = await client.delete("/items/bulk", params={"ids": [1, 3]})
             assert response.status_code == 200
             assert response.json()["deleted"] == 2
 
@@ -902,11 +875,7 @@ class TestAdvancedIntegration:
 
         @v1_router.get("/data")
         async def get_data_v1():
-            return {
-                "version": "1.0",
-                "data": {"format": "old"},
-                "deprecated": True
-            }
+            return {"version": "1.0", "data": {"format": "old"}, "deprecated": True}
 
         # API v2
         v2_router = Router(prefix="/api/v2", tags=["v2"])
@@ -918,9 +887,9 @@ class TestAdvancedIntegration:
                 "data": {
                     "format": "new",
                     "enhanced": True,
-                    "features": ["pagination", "filtering"]
+                    "features": ["pagination", "filtering"],
                 },
-                "deprecated": False
+                "deprecated": False,
             }
 
         class DataQuery(BaseModel):
@@ -933,7 +902,7 @@ class TestAdvancedIntegration:
                 "version": "2.0",
                 "results": list(range(query.offset, query.offset + query.limit)),
                 "limit": query.limit,
-                "offset": query.offset
+                "offset": query.offset,
             }
 
         app.include_router(v1_router)
@@ -956,10 +925,7 @@ class TestAdvancedIntegration:
             assert "enhanced" in data["data"]
 
             # Use v2 advanced features
-            response = await client.post(
-                "/api/v2/data/query",
-                json={"limit": 5, "offset": 10}
-            )
+            response = await client.post("/api/v2/data/query", json={"limit": 5, "offset": 10})
             assert response.status_code == 200
             data = response.json()
             assert len(data["results"]) == 5

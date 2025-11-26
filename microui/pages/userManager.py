@@ -96,21 +96,21 @@ class UsersManagement:
                 </div>
                 
                 {Card.render(
-            body=f'''
+                body=f'''
                         {search_html}
                         
                         {Table.render(
-                headers=headers,
-                rows=rows,
-                zebra=True,
-                hoverable=True,
-                classes="w-full"
-            )}
+                    headers=headers,
+                    rows=rows,
+                    zebra=True,
+                    hoverable=True,
+                    classes="w-full"
+                )}
                         
                         {pagination}
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
             </div>
         </div>
         """

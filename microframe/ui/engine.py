@@ -1,12 +1,10 @@
 from pathlib import Path
 
 import jinja2
-
 from starlette.requests import Request
 from starlette.responses import HTMLResponse
 
-from .components import  auto_register_components
-
+from .components import ComponentExtension, auto_register_components
 
 
 class TemplateEngine:

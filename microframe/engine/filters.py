@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Any
 
 
-
 def filter_truncate(text: str, length: int = 100, suffix: str = "..."):
     """Truncate text to specified length"""
     if len(text) <= length:
@@ -47,5 +46,3 @@ def filter_timeago(dt: datetime):
 def filter_json_pretty(obj: Any):
     """Pretty print JSON"""
     return json.dumps(obj, indent=2, ensure_ascii=False)
-
-

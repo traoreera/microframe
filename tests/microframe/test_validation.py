@@ -1,9 +1,11 @@
 """
 Tests for Validation with Pydantic
 """
+
 import pytest
 from httpx import AsyncClient
 from pydantic import BaseModel, Field, ValidationError
+
 from microframe import Application
 
 
@@ -42,9 +44,7 @@ class TestValidation:
         @app.post("/items")
         async def create_item(request, item: Item):
 
-            try: return {"name": item.name, "price": item.price}
-            except ValidationError as e:
-                return await app._validation_exception_handler(request, e)
+            return {"name": item.name, "price": item.price}
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Missing required field
@@ -67,9 +67,7 @@ class TestValidation:
 
         @app.post("/users")
         async def create_user(user: User):
-            try:return user.model_dump()
-            except Exception as e:
-                return await app._validation_exception_handler(None, e)
+            return user.model_dump()
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Valid user
@@ -89,7 +87,7 @@ class TestValidation:
             response = await client.post(
                 "/users", json={"username": "john", "age": 200, "email": "john@example.com"}
             )
-            assert response.json()['status_code'] == 422
+            assert response.status_code == 422
 
     @pytest.mark.asyncio
     async def test_nested_model_validation(self):

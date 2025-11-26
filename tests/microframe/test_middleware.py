@@ -1,8 +1,10 @@
 """
 Tests for CORS Middleware
 """
+
 import pytest
 from httpx import AsyncClient
+
 from microframe import Application
 from microframe.middleware import CORSMiddleware
 
@@ -14,7 +16,7 @@ class TestCORSMiddleware:
     async def test_cors_headers(self):
         """Test CORS headers are added"""
         app = Application()
-        
+
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["http://localhost:3000"],
@@ -27,9 +29,7 @@ class TestCORSMiddleware:
             return {"message": "ok"}
 
         async with AsyncClient(app=app, base_url="http://test") as client:
-            response = await client.get(
-                "/test", headers={"Origin": "http://localhost:3000"}
-            )
+            response = await client.get("/test", headers={"Origin": "http://localhost:3000"})
             assert response.status_code == 200
             # CORS headers should be present
             assert "access-control-allow-origin" in response.headers
@@ -38,7 +38,7 @@ class TestCORSMiddleware:
     async def test_cors_preflight(self):
         """Test CORS preflight OPTIONS request"""
         app = Application()
-        
+
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["http://localhost:3000"],
@@ -65,7 +65,7 @@ class TestCORSMiddleware:
     async def test_cors_wildcard_origin(self):
         """Test CORS with wildcard origin"""
         app = Application()
-        
+
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
@@ -77,9 +77,7 @@ class TestCORSMiddleware:
             return {"public": True}
 
         async with AsyncClient(app=app, base_url="http://test") as client:
-            response = await client.get(
-                "/public", headers={"Origin": "http://any-origin.com"}
-            )
+            response = await client.get("/public", headers={"Origin": "http://any-origin.com"})
             assert response.status_code == 200
 
 
@@ -90,7 +88,7 @@ class TestSecurityMiddleware:
     async def test_security_headers(self):
         """Test security headers are added"""
         from microframe.middleware import SecurityMiddleware
-        
+
         app = Application()
         app.add_middleware(SecurityMiddleware)
 
@@ -101,8 +99,8 @@ class TestSecurityMiddleware:
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.get("/test")
             assert response.status_code == 200
-            
+
             # Check for common security headers
-            headers = response.headers
+            response.headers
             # Some security headers might be present
             assert response.status_code == 200  # At minimum, request should succeed

@@ -3,8 +3,9 @@ import inspect
 import logging
 from typing import Any, Callable, Dict, List, Literal, Optional
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 from starlette.applications import Starlette
+from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import (
     FileResponse,
@@ -16,12 +17,12 @@ from starlette.responses import (
     StreamingResponse,
 )
 from starlette.routing import Route
-from .exceptions import Unprocessable
-from ..dependencies import AppException, DependencyManager
-from ..docs import OpenAPIGenerator, ReDocUI, SwaggerUI
-from ..routing import RouteInfo
-from ..routing import Router as APIRouter
-from ..validation import RequestParser
+
+from microframe.dependencies import AppException, DependencyManager
+from microframe.docs import OpenAPIGenerator, ReDocUI, SwaggerUI
+from microframe.routing.router import RouteInfo, Router
+from microframe.validation import RequestParser
+
 from .config import AppConfig
 
 
@@ -35,7 +36,7 @@ class Application(Starlette):
         # --- COMPOSANTS PRINCIPAUX ---
         self._routes_info: List[RouteInfo] = []
         self._dependency_manager = DependencyManager()
-        self._routers: List[Dict[str, Any]] = []
+        self._routers: List[Router] = []
 
         # --- LOGGING ---
         logging.basicConfig(
@@ -51,12 +52,13 @@ class Application(Starlette):
             exception_handlers={
                 AppException: self._app_exception_handler,
                 ValidationError: self._validation_exception_handler,
-                Exception: self._generic_exception_handler,
-            },  # type: ignore
+                Exception: self._global_exception_handler,
+            },
         )
 
         # --- ROUTES INTERNES (DOCS + OPENAPI) ---
-        self._register_internal_routes()
+        if self.config.docs_url or self.config.redoc_url:
+            self._register_internal_routes()
 
         self.logger.info(
             f"✅ Application '{self.config.title}' initialisée (v{self.config.version})"
@@ -146,17 +148,17 @@ class Application(Starlette):
 
     def include_router(
         self,
-        router: APIRouter,
+        router: Router,
         prefix: str = "",
         tags: Optional[List[str]] = None,
     ):
-        """Inclut un APIRouter complet"""
+        """Inclut un Router complet"""
         if not hasattr(router, "get_routes"):
-            raise ValueError("Objet fourni non valide: doit être un APIRouter")
+            raise ValueError("Objet fourni non valide: doit être un Router")
 
         combined_prefix = prefix.rstrip("/")
         router_routes = router.get_routes()
-        self._routers.append(router)  # type: ignore
+        self._routers.append(router)
 
         self.logger.info(
             f"🧩 Inclusion router: {len(router_routes)} routes (prefix='{combined_prefix or '/'}')"
@@ -197,11 +199,22 @@ class Application(Starlette):
 
         async def endpoint(request: Request):
             try:
+                # Parse request parameters (body, query, path)
                 params = await RequestParser().parse(request, info.func)
+
+                # Add path parameters from Starlette
+                path_params = dict(request.path_params)
+
+                # Resolve dependencies
                 deps = await self._dependency_manager.resolve(info.func, request)
-                all_kwargs = {**params, **deps}
+
+                # Merge all kwargs (path params override query params)
+                all_kwargs = {**params, **path_params, **deps}
+
+                # Call the endpoint function
                 result = await self._call_endpoint(info.func, all_kwargs)
-                # TODO: add starlet all posible response heare ....
+
+                # Handle different response types
                 if isinstance(
                     result,
                     (
@@ -212,29 +225,28 @@ class Application(Starlette):
                         StreamingResponse,
                         PlainTextResponse,
                         Response,
-                        Exception,
                     ),
                 ):
                     return result
-                return JSONResponse(result)
+                # pydantic models
+                if isinstance(result, dict):
+                    return JSONResponse(result, status_code=info.status_code)
+                # Default: return JSON
+                return JSONResponse(result.model_dump(), status_code=info.status_code)
 
             except AppException as e:
-                return JSONResponse(
-                    {"error": e.message, "details": e.details}, status_code=e.status_code
-                )
+                return await self._app_exception_handler(request, e)
+            except ValidationError as e:
+                return await self._validation_exception_handler(request, e)
             except Exception as e:
-                self.logger.error(f"Erreur route {info.path}: {e}", exc_info=True)
-                return JSONResponse({"error": "Internal server error"}, status_code=500)
+                return await self._global_exception_handler(request, e)
 
         return Route(info.path, endpoint=endpoint, methods=info.methods)
 
     async def _call_endpoint(self, func: Callable, kwargs: Dict):
         """Exécute un endpoint (sync/async)"""
         if inspect.iscoroutinefunction(func):
-            try:
-                return await func(**kwargs)
-            except Exception as e:
-                return await self._app_exception_handler(None, AppException("Internal server error"))
+            return await func(**kwargs)
         return func(**kwargs)
 
     # ============================================================
@@ -242,16 +254,25 @@ class Application(Starlette):
     # ============================================================
 
     async def _app_exception_handler(self, request: Request, exc: AppException):
+        """Gère les exceptions métier de l'application"""
         return JSONResponse(
             {"error": exc.message, "details": exc.details}, status_code=exc.status_code
         )
 
     async def _validation_exception_handler(self, request: Request, exc: ValidationError):
+        """Gère les erreurs de validation Pydantic"""
         return JSONResponse({"error": "Validation error", "details": exc.errors()}, status_code=422)
 
-    async def _generic_exception_handler(self, request: Request, exc: Exception):
-        self.logger.error(f"Erreur non gérée: {exc}", exc_info=True)
-        return JSONResponse({"error": "Internal server error"}, status_code=500)
+    async def _global_exception_handler(self, request: Request, exc: Exception):
+
+        if isinstance(exc, HTTPException):
+            return JSONResponse(
+                {"error": exc.detail, "details": exc.headers}, status_code=exc.status_code
+            )
+
+        return JSONResponse(
+            {"error": "Internal server error", "details": str(exc)}, status_code=500
+        )
 
     # ============================================================
     # === DOCS & OPENAPI ========================================
@@ -261,14 +282,13 @@ class Application(Starlette):
         """Définit les routes internes (/docs, /openapi.json, /redoc)"""
 
         async def openapi(request: Request):
-            openapi = OpenAPIGenerator(
+            openapi_gen = OpenAPIGenerator(
                 routes=self._routes_info,
                 title=self.config.title,
                 version=self.config.version,
                 description=self.config.description,
             )
-
-            return JSONResponse(openapi.generate())
+            return JSONResponse(openapi_gen.generate())
 
         async def docs(request: Request):
             return SwaggerUI(title=self.config.title)()
@@ -277,88 +297,67 @@ class Application(Starlette):
             return ReDocUI(title=self.config.title)()
 
         internal_routes = [
-            Route("/openapi.json", endpoint=openapi, methods=["GET"]),
-            Route(
-                (
-                    "/" + self.config.docs_url
-                    if not self.config.docs_url.startswith("/")
-                    else self.config.docs_url
-                ),
-                endpoint=docs,
-                methods=["GET"],
-            ),
-            Route(
-                (
-                    "/" + self.config.redoc_url
-                    if not self.config.redoc_url.startswith("/")
-                    else self.config.redoc_url
-                ),
-                endpoint=redoc,
-                methods=["GET"],
-            ),
+            Route(self.config.openapi_url, endpoint=openapi, methods=["GET"]),
         ]
+
+        # Ajouter docs si configuré
+        if self.config.docs_url:
+            docs_path = (
+                self.config.docs_url
+                if self.config.docs_url.startswith("/")
+                else f"/{self.config.docs_url}"
+            )
+            internal_routes.append(Route(docs_path, endpoint=docs, methods=["GET"]))
+
+        # Ajouter redoc si configuré
+        if self.config.redoc_url:
+            redoc_path = (
+                self.config.redoc_url
+                if self.config.redoc_url.startswith("/")
+                else f"/{self.config.redoc_url}"
+            )
+            internal_routes.append(Route(redoc_path, endpoint=redoc, methods=["GET"]))
+
         self.routes.extend(internal_routes)
         self.logger.debug("📚 Routes internes (docs/openapi/redoc) enregistrées")
 
-    def _generate_openapi(self) -> Dict:
-        paths: Dict[str, Any] = {}
-
-        for info in self._routes_info:
-            if not info.include_in_schema:
-                continue
-
-            if info.path not in paths:
-                paths[info.path] = {}
-
-            for method in info.methods:
-                params, body = self._extract_schema(info.func)
-
-                paths[info.path][method.lower()] = {
-                    "summary": info.summary,
-                    "description": info.description,
-                    "tags": info.tags,
-                    "parameters": params,
-                    "requestBody": body,
-                    "responses": {
-                        "200": {"description": "Successful Response"},
-                        "422": {"description": "Validation Error"},
-                        "500": {"description": "Internal Server Error"},
-                    },
-                }
-
-        return {
-            "openapi": "3.0.2",
-            "info": {
-                "title": self.config.title,
-                "version": self.config.version,
-                "description": self.description,
-            },
-            "paths": paths,
-        }
-
     def _extract_schema(self, func: Callable):
+        """Extrait le schéma OpenAPI d'une fonction"""
         sig = inspect.signature(func)
         params = []
         request_body = None
 
         for name, param in sig.parameters.items():
+            # Ignorer les paramètres spéciaux
+            if name in ["self", "cls", "request", "db"]:
+                continue
+
             ann = param.annotation
 
+            # Gestion des modèles Pydantic
             if RequestParser()._is_pydantic_model(ann):
                 schema = ann.model_json_schema()
                 request_body = {
                     "required": True,
                     "content": {"application/json": {"schema": schema}},
                 }
-            elif name not in ["request"]:
-                if name in ["self", "cls", "db"]:
-                    continue
+            else:
+                # Déterminer le type de paramètre
+                param_type = "string"
+                if ann == int:
+                    param_type = "integer"
+                elif ann == float:
+                    param_type = "number"
+                elif ann == bool:
+                    param_type = "boolean"
+
+                # Paramètres de query/path
                 params.append(
                     {
                         "name": name,
-                        "in": "query",
+                        "in": "query",  # Sera changé en "path" par OpenAPIGenerator si nécessaire
                         "required": param.default == inspect.Parameter.empty,
-                        "schema": {"type": "string"},
+                        "schema": {"type": param_type},
                     }
                 )
 

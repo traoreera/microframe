@@ -30,11 +30,11 @@ class ProfilePages:
             f"""
         <div class="flex flex-col items-center gap-4">
             {Avatar.render(
-            src=user.get(
-                "avatar", "https://api.dicebear.com/7.x/avataaars/svg?seed=default"),
-            alt=user.get("full_name", "Utilisateur"),
-            size="lg"
-        )}
+                src=user.get(
+                    "avatar", "https://api.dicebear.com/7.x/avataaars/svg?seed=default"),
+                alt=user.get("full_name", "Utilisateur"),
+                size="lg"
+            )}
             <label class="btn btn-sm btn-outline">
                 <input type="file" class="hidden" accept="image/*" />
                 Changer la photo
@@ -95,8 +95,8 @@ class ProfilePages:
             f"""
         <div class="mt-6">
             {Card.render(
-            title="Sécurité",
-            body='''
+                title="Sécurité",
+                body='''
                     <div class="space-y-3">
                         <button class="btn btn-outline btn-block">
                             Changer le mot de passe
@@ -109,8 +109,8 @@ class ProfilePages:
                         </button>
                     </div>
                 ''',
-            classes="shadow"
-        )}
+                classes="shadow"
+            )}
         </div>
         """
             if show_security
@@ -129,8 +129,8 @@ class ProfilePages:
                 </div>
                 
                 {Card.render(
-            title="Mon Profil",
-            body=f'''
+                title="Mon Profil",
+                body=f'''
                         <div class="flex flex-col md:flex-row gap-6 mb-6">
                             {avatar_html}
                             
@@ -153,15 +153,15 @@ class ProfilePages:
                             </div>
                             
                             {Button.render(
-                text="Enregistrer les modifications",
-                variant="primary",
-                block=True,
-                classes="mt-6"
-            )}
+                    text="Enregistrer les modifications",
+                    variant="primary",
+                    block=True,
+                    classes="mt-6"
+                )}
                         </form>
                     ''',
-            classes="shadow-lg"
-        )}
+                classes="shadow-lg"
+            )}
                 
                 {security_html}
             </div>

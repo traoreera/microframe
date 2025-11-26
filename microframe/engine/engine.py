@@ -5,7 +5,7 @@ import re
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Dict, Optional, Any
+from typing import Any, Callable, Dict, Optional
 
 import httpx
 import jinja2
@@ -25,7 +25,6 @@ from .filters import (
 from .globals import breadcrumbs, generate_csrf_token, paginate
 
 logger = logging.getLogger(__name__)
-
 
 
 class TemplateEngine:

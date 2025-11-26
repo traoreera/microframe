@@ -1,8 +1,10 @@
 """
 Tests for Dependency Injection
 """
+
 import pytest
 from httpx import AsyncClient
+
 from microframe import Application, Depends
 
 
@@ -132,7 +134,7 @@ class TestDependencies:
             # First call
             response1 = await client.get("/cached1")
             assert response1.status_code == 200
-            
+
             # Second call should use cache (if caching is working)
             response2 = await client.get("/cached2")
             assert response2.status_code == 200
@@ -188,11 +190,11 @@ class TestDependencyManager:
         from microframe.dependencies import DependencyManager
 
         manager = DependencyManager()
-        
+
         # Add something to cache
         manager._cache["test"] = "value"
         assert len(manager._cache) > 0
-        
+
         # Clear cache
         manager.clear_cache()
         assert len(manager._cache) == 0

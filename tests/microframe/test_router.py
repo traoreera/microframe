@@ -1,8 +1,10 @@
 """
 Tests for Router functionality
 """
+
 import pytest
 from httpx import AsyncClient
+
 from microframe import Application, Router
 
 
@@ -66,14 +68,12 @@ class TestRouter:
     async def test_nested_routers(self):
         """Test nested router inclusion"""
         app = Application()
-                
-                # Main API router
+
+        # Main API router
         api_router = Router(prefix="/api")
-                
 
         users_router = Router(prefix="/users", tags=["Users"])
         posts_router = Router(prefix="/posts", tags=["Posts"])
-
 
         @users_router.get("/")
         async def list_users():
@@ -83,17 +83,16 @@ class TestRouter:
         async def get_user(user_id: str):
             return {"user_id": user_id}
 
-                # Posts sub-router
-
+            # Posts sub-router
 
         @posts_router.get("/")
         async def list_posts():
             return {"posts": []}
 
-                # Include sub-routers
+            # Include sub-routers
+
         api_router.include_router(users_router)
         api_router.include_router(posts_router)
-
 
         app.include_router(api_router, "/api")
 
@@ -173,7 +172,7 @@ class TestRouter:
         """Test that router prefix is normalized"""
         router1 = Router(prefix="/api/")
         router2 = Router(prefix="/api")
-        
+
         # Both should normalize to same prefix
         assert router1.prefix == "/api"
         assert router2.prefix == "/api"

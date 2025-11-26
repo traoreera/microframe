@@ -1,6 +1,7 @@
 """
 Tests for MicroUI DaisyUI Components
 """
+
 import pytest
 
 
@@ -56,11 +57,7 @@ class TestDaisyUIKit:
         """Test Modal component rendering"""
         from microui import Modal
 
-        html = Modal.render(
-            id="test-modal",
-            title="Modal Title",
-            content="Modal content here"
-        )
+        html = Modal.render(id="test-modal", title="Modal Title", content="Modal content here")
         assert "test-modal" in html
         assert "Modal Title" in html
         assert "Modal content here" in html
@@ -75,7 +72,7 @@ class TestDaisyUIKit:
             ["John Doe", "john@example.com", "Admin"],
             ["Jane Smith", "jane@example.com", "User"],
         ]
-        
+
         html = Table.render(headers=headers, rows=rows)
         assert "Name" in html
         assert "Email" in html
@@ -100,7 +97,7 @@ class TestDaisyUIKit:
             items=[
                 {"text": "Home", "href": "/"},
                 {"text": "About", "href": "/about"},
-            ]
+            ],
         )
         assert "MyApp" in html
         assert "Home" in html
@@ -117,7 +114,10 @@ class TestAdvancedComponents:
 
         html = Sidebar.render(
             items=[
-                {"label": "Dashboard", "href": "/dashboard",},
+                {
+                    "label": "Dashboard",
+                    "href": "/dashboard",
+                },
                 {"label": "Settings", "href": "/settings"},
             ]
         )
@@ -184,10 +184,10 @@ class TestLayoutComponents:
             description="Lorem ipsum dolor sit amet",
             features=["Feature 1", "Feature 2", "Feature 3"],
             cta_text="Choisir ce plan",
-            featured=True
+            featured=True,
         )
 
-        html+= Pricing.simple_pricing_card(
+        html += Pricing.simple_pricing_card(
             name="Pro",
             price="$19.99",
             currency="$",
@@ -195,7 +195,7 @@ class TestLayoutComponents:
             description="Lorem ipsum dolor sit amet",
             features=["Feature 1", "Feature 2", "Feature 3"],
             cta_text="Choisir ce plan",
-            featured=True
+            featured=True,
         )
         assert "Basic" in html
         assert "Pro" in html
@@ -206,7 +206,9 @@ class TestLayoutComponents:
         """Test Contact form layout"""
         from microui.layout import Contact
 
-        html = Contact.contact_form(form_action="/contact",)
+        html = Contact.contact_form(
+            form_action="/contact",
+        )
         assert "form" in html.lower()
         assert "/contact" in html
         assert "post" in html.lower()

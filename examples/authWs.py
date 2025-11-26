@@ -1,6 +1,7 @@
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.websockets import WebSocket
+from ws import BaseWebSocket
 
 from authx.config import AuthConfig
 from authx.dependencies import get_current_user
@@ -9,7 +10,6 @@ from authx.manager import AuthManager
 from authx.models import LoginRequest, TokenResponse, UserResponse
 from authx.security import hash_password, verify_password
 from microframe import Router
-from ws import BaseWebSocket
 
 # ---------------------------
 # Mock database / AuthManager

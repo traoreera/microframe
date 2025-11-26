@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, Optional, get_type_hints
 
 from starlette.requests import Request
 
-from ..core.exceptions import DependencyException
+from ..exceptions.exception import MicroFrameException
 from .exceptionHandler import Depends
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ class DependencyManager:
         # Check circular dependencies
         dep_id = id(depends.dependency)
         if dep_id in self._resolving:
-            raise DependencyException(
+            raise MicroFrameException(
                 f"Circular dependency detected: {depends.dependency.__name__}"
             )
 

@@ -367,12 +367,12 @@ class Contact:
         phone_field = (
             f"""
         {Input.render(
-            name="phone",
-            type="tel",
-            label="Téléphone",
-            placeholder="+33 6 12 34 56 78",
-            classes="mb-4"
-        )}
+                name="phone",
+                type="tel",
+                label="Téléphone",
+                placeholder="+33 6 12 34 56 78",
+                classes="mb-4"
+            )}
         """
             if include_phone
             else ""
@@ -381,12 +381,12 @@ class Contact:
         company_field = (
             f"""
         {Input.render(
-            name="company",
-            type="text",
-            label="Entreprise",
-            placeholder="Votre entreprise",
-            classes="mb-4"
-        )}
+                name="company",
+                type="text",
+                label="Entreprise",
+                placeholder="Votre entreprise",
+                classes="mb-4"
+            )}
         """
             if include_company
             else ""
@@ -395,13 +395,13 @@ class Contact:
         subject_field = (
             f"""
         {Input.render(
-            name="subject",
-            type="text",
-            label="Sujet",
-            placeholder="Décrivez brièvement votre demande",
-            required=True,
-            classes="mb-4"
-        )}
+                name="subject",
+                type="text",
+                label="Sujet",
+                placeholder="Décrivez brièvement votre demande",
+                required=True,
+                classes="mb-4"
+            )}
         """
             if include_subject
             else ""
@@ -418,22 +418,22 @@ class Contact:
                 
                 <form method="POST" action="{form_action}" class="space-y-4">
                     {Input.render(
-            name="full_name",
-            type="text",
-            label="Nom complet",
-            placeholder="Jean Dupont",
-            required=True,
-            classes="mb-4"
-        )}
+                name="full_name",
+                type="text",
+                label="Nom complet",
+                placeholder="Jean Dupont",
+                required=True,
+                classes="mb-4"
+            )}
                     
                     {Input.render(
-            name="email",
-            type="email",
-            label="Email",
-            placeholder="votre@email.com",
-            required=True,
-            classes="mb-4"
-        )}
+                name="email",
+                type="email",
+                label="Email",
+                placeholder="votre@email.com",
+                required=True,
+                classes="mb-4"
+            )}
                     
                     {phone_field}
                     {company_field}
@@ -452,10 +452,10 @@ class Contact:
                     </div>
                     
                     {Button.render(
-            text="Envoyer le message",
-            variant="primary",
-            block=True
-        )}
+                text="Envoyer le message",
+                variant="primary",
+                block=True
+            )}
                 </form>
             </div>
         </div>
@@ -694,20 +694,20 @@ class Contact:
                     
                     <div class="space-y-6">
                         {Contact.contact_info_card(
-            title=direct_contact.get(
-                "title", "Call To action"),  # "call to action",
-            # "+33 1 23 45 67 89",
-            phone=direct_contact.get("phone", "+33 1 23 45 67 89"),
-            # "contact@example.com",
-            email=direct_contact.get("email", "contact@example.com"),
-            # "123 Avenue des Champs, 75000 Paris, France",
-            address=direct_contact.get(
-                "address", "123 Avenue des Champs, 75000 Paris, France"),
-            # "Lun-Ven: 9h-18h<br/>Sam-Dim: Fermé",
-            hours=direct_contact.get(
-                "hours", "Lun-Ven: 9h-18h<br/>Sam-Dim: Fermé"),
-            social_links=social_links
-        )}
+                title=direct_contact.get(
+                    "title", "Call To action"),  # "call to action",
+                # "+33 1 23 45 67 89",
+                phone=direct_contact.get("phone", "+33 1 23 45 67 89"),
+                # "contact@example.com",
+                email=direct_contact.get("email", "contact@example.com"),
+                # "123 Avenue des Champs, 75000 Paris, France",
+                address=direct_contact.get(
+                    "address", "123 Avenue des Champs, 75000 Paris, France"),
+                # "Lun-Ven: 9h-18h<br/>Sam-Dim: Fermé",
+                hours=direct_contact.get(
+                    "hours", "Lun-Ven: 9h-18h<br/>Sam-Dim: Fermé"),
+                social_links=social_links
+            )}
                     </div>
                 </div>
             </section>

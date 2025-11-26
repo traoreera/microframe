@@ -9,8 +9,8 @@ from typing import Any, Callable, Dict
 from pydantic import BaseModel, ValidationError
 from starlette.requests import Request
 
-from ..core.exceptions import ValidationException
 from ..dependencies.exceptionHandler import Depends
+from ..exceptions.exception import ValidationException
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class RequestParser:
                 try:
                     params[param_name] = annotation(**body_data)
                 except ValidationError as e:
-                    return  ValidationException(
+                    return ValidationException(
                         message="Request validation failed", errors=e.errors()
                     ).to_dict()
 
