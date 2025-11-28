@@ -81,7 +81,7 @@ class TestExceptions:
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.post("/validate")
             assert response.status_code == 400
-            assert "type" in response.json()
+            assert "error" in response.json()
 
     @pytest.mark.asyncio
     async def test_generic_exception_handling(self):

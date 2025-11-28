@@ -1,13 +1,8 @@
 """
-Router for organizing routes - VERSION CORRIGÉE
+Router for organizing routes - VERSION FINALE CORRIGÉE
 """
 
-from typing import Any, Awaitable, Callable, List, Optional
-
-from starlette.routing import WebSocketRoute
-from starlette.websockets import WebSocket, WebSocketClose
-
-from ..validation.parser import RequestParser
+from typing import Any, Callable, List, Optional
 
 
 class RouteInfo:
@@ -37,10 +32,18 @@ class RouteInfo:
         self.deprecated = deprecated
         self.include_in_schema = include_in_schema
 
+    def __repr__(self):
+        return f"RouteInfo(path={self.path}, methods={self.methods}, tags={self.tags})"
+
 
 class Router:
     """
     Router for organizing routes into modules
+
+    Architecture:
+    - Les routes sont stockées avec leur path RELATIF (sans prefix)
+    - Les routers imbriqués sont stockés séparément avec leur prefix
+    - get_routes() reconstruit tous les paths en combinant les préfixes
 
     Example:
         router = Router(prefix="/api/v1", tags=["API"])
@@ -60,13 +63,18 @@ class Router:
         deprecated: bool = False,
         include_in_schema: bool = True,
     ):
-        self.prefix = prefix.rstrip("/")
+        # Normaliser le prefix (retirer le / final)
+        self.prefix = prefix.rstrip("/") if prefix else ""
         self.tags = tags or []
         self.dependencies = dependencies or []
         self.deprecated = deprecated
         self.include_in_schema = include_in_schema
-        self._routes: List[RouteInfo | WebSocketRoute] = []
-        self._routers: List[tuple] = []  # (router, prefix, tags)
+
+        # Stockage des routes locales (avec paths RELATIFS)
+        self._routes: List[RouteInfo] = []
+
+        # Stockage des routers imbriqués: (router, prefix_additionnel, tags_additionnels)
+        self._nested_routers: List[tuple[Router, str, List[str]]] = []
 
     def add_route(
         self,
@@ -82,20 +90,25 @@ class Router:
         include_in_schema: bool = True,
         **kwargs,
     ) -> Callable:
-        """Add a route to the router"""
+        """
+        Add a route to the router
+
+        Le path est stocké RELATIF (sans le prefix du router)
+        """
         if methods is None:
             methods = ["GET"]
 
-        # Build full path
-        full_path = f"{self.prefix}{path}"
+        # Normaliser le path (s'assurer qu'il commence par /)
+        if not path.startswith("/"):
+            path = f"/{path}"
 
-        # Merge tags
+        # Merge tags (tags du router + tags de la route)
         route_tags = tags or []
         all_tags = list(set(self.tags + route_tags))
 
-        # Create route info
+        # ✅ Créer RouteInfo avec path RELATIF
         route_info = RouteInfo(
-            path=full_path,
+            path=path,  # Path relatif uniquement
             func=func,
             methods=methods,
             tags=all_tags,
@@ -166,14 +179,6 @@ class Router:
 
         return decorator
 
-    def websocket(self, path: str, **kwargs) -> Callable:
-        """WebSocket route decorator"""
-
-        def decorator(func: Callable) -> Callable:
-            return self.add_route(path, func, methods=["GET"], **kwargs)
-
-        return decorator
-
     def route(self, path: str, methods: Optional[List[str]] = None, **kwargs) -> Callable:
         """Generic route decorator"""
 
@@ -184,37 +189,70 @@ class Router:
 
     def include_router(self, router: "Router", prefix: str = "", tags: Optional[List[str]] = None):
         """
-        Include another router
+        Include another router into this router
 
         Args:
-            router: Router to include
-            prefix: Additional prefix for routes
-            tags: Additional tags
+            router: Router instance to include
+            prefix: Additional prefix to prepend to all routes
+            tags: Additional tags to add to all routes
+
+        Example:
+            main_router = Router(prefix="/api")
+            users_router = Router(prefix="/users", tags=["Users"])
+
+            @users_router.get("/")
+            def list_users(): pass
+
+            main_router.include_router(users_router, prefix="/v1", tags=["V1"])
+            # Result: /api/v1/users/ with tags ["Users", "V1"]
         """
-        self._routers.append((router, prefix, tags or []))
+        if not isinstance(router, Router):
+            raise TypeError(f"Expected Router instance, got {type(router).__name__}")
+
+        # Normaliser le prefix additionnel
+        additional_prefix = prefix.rstrip("/") if prefix else ""
+        additional_tags = tags or []
+
+        # ✅ Stocker le router imbriqué au lieu de copier ses routes
+        self._nested_routers.append((router, additional_prefix, additional_tags))
 
     def get_routes(self, prefix: str = "", tags: Optional[List[str]] = None) -> List[RouteInfo]:
         """
-        Get all routes including nested routers
+        Get all routes with complete paths
+
+        Reconstruit récursivement tous les paths en combinant:
+        - prefix externe (de l'Application)
+        - prefix du router actuel
+        - prefix additionnel (de include_router)
+        - prefix des routers imbriqués
+        - path de la route
 
         Args:
-            prefix: Additional prefix to prepend
-            tags: Additional tags to add
+            prefix: Prefix externe (généralement de l'Application)
+            tags: Tags externes (généralement de l'Application)
 
         Returns:
-            List of all route info objects
+            List of RouteInfo with complete paths
         """
         all_routes = []
         additional_tags = tags or []
 
-        # Process direct routes
+        # ✅ Traiter les routes locales
         for route_info in self._routes:
-            # Clone route info with updated path and tags
-            updated_route = RouteInfo(
-                path=f"{prefix}{route_info.path}",
+            # Construire le path complet: prefix_externe + prefix_router + path_route
+            full_path = f"{prefix}{self.prefix}{route_info.path}"
+
+            # Normaliser (éviter //)
+            full_path = full_path.replace("//", "/")
+
+            # Combiner les tags
+            combined_tags = list(set(route_info.tags + additional_tags))
+
+            complete_route = RouteInfo(
+                path=full_path,
                 func=route_info.func,
                 methods=route_info.methods,
-                tags=list(set(route_info.tags + additional_tags)),
+                tags=combined_tags,
                 summary=route_info.summary,
                 description=route_info.description,
                 response_model=route_info.response_model,
@@ -222,22 +260,22 @@ class Router:
                 deprecated=route_info.deprecated,
                 include_in_schema=route_info.include_in_schema,
             )
-            all_routes.append(updated_route)
+            all_routes.append(complete_route)
 
-        # Process nested routers
-        for nested_router, nested_prefix, nested_tags in self._routers:
-            combined_prefix = f"{prefix}{nested_prefix}"
+        # ✅ Traiter les routers imbriqués (récursion)
+        for nested_router, nested_prefix, nested_tags in self._nested_routers:
+            # Combiner le prefix: prefix_externe + prefix_router + prefix_additionnel
+            combined_prefix = f"{prefix}{self.prefix}{nested_prefix}"
+
+            # Combiner les tags
             combined_tags = list(set(additional_tags + nested_tags))
 
+            # Récupérer les routes du router imbriqué (récursion)
             nested_routes = nested_router.get_routes(prefix=combined_prefix, tags=combined_tags)
+
             all_routes.extend(nested_routes)
 
         return all_routes
 
-    def ws(
-        self,
-        path: str,
-        endpoint: Callable[[WebSocket], Awaitable[None]],
-        name: str | None = None,
-    ):  # pragma: no cover
-        WebSocketRoute(path, endpoint=endpoint, name=name)
+    def __repr__(self):
+        return f"Router(prefix='{self.prefix}', routes={len(self._routes)}, nested={len(self._nested_routers)}, tags={self.tags})"

@@ -56,7 +56,6 @@ build: ## Build complet du projet (clean + install + lint-fix + format)
 	@$(MAKE) lint-fix
 	@echo ""
 	@echo "✅ Build terminé avec succès!"
-	@poetry build
 
 build-prod: ## Build pour production (build + tests + validation)
 	@echo "🚀 BUILD PRODUCTION"
@@ -96,7 +95,7 @@ lint-fix: ## Correction automatique des erreurs de linting (SAFE - préserve imp
 
 test: ## Exécution des tests
 	@echo "🧪 Exécution des tests..."
-	@poetry run pytest tests/ --cov --cov-branch --cov=src --cov-report=xml; 
+	@poetry run pytest  --cov --cov-branch --cov=src --cov-report=xml --verbose; 
 
 
 security-check: ## Vérification de sécurité basique

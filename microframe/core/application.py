@@ -5,7 +5,6 @@ from typing import Any, Callable, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ValidationError
 from starlette.applications import Starlette
-from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import (
     FileResponse,
@@ -23,6 +22,7 @@ from microframe.docs import OpenAPIGenerator, ReDocUI, SwaggerUI
 from microframe.routing.router import RouteInfo, Router
 from microframe.validation import RequestParser
 
+from ..exceptions.exception import HTTPException, ValidationException
 from .config import AppConfig
 
 
@@ -53,7 +53,7 @@ class Application(Starlette):
                 AppException: self._app_exception_handler,
                 ValidationError: self._validation_exception_handler,
                 Exception: self._global_exception_handler,
-            },
+            },  # type: ignore
         )
 
         # --- ROUTES INTERNES (DOCS + OPENAPI) ---
@@ -231,8 +231,10 @@ class Application(Starlette):
                 # pydantic models
                 if isinstance(result, dict):
                     return JSONResponse(result, status_code=info.status_code)
-                # Default: return JSON
-                return JSONResponse(result.model_dump(), status_code=info.status_code)
+                elif hasattr(result, "model_dump"):  # Pydantic model
+                    return JSONResponse(result.model_dump(), status_code=info.status_code)
+                else:  # Primitive types
+                    return JSONResponse(result, status_code=info.status_code)
 
             except AppException as e:
                 return await self._app_exception_handler(request, e)
@@ -265,11 +267,16 @@ class Application(Starlette):
 
     async def _global_exception_handler(self, request: Request, exc: Exception):
 
-        if isinstance(exc, HTTPException):
+        if isinstance(exc, (HTTPException)):
             return JSONResponse(
                 {"error": exc.detail, "details": exc.headers}, status_code=exc.status_code
             )
 
+        if isinstance(exc, TypeError):
+            print(exc, type(exc))
+            raise ValidationException(message="Validation Error")
+
+        print(exc, type(exc))
         return JSONResponse(
             {"error": "Internal server error", "details": str(exc)}, status_code=500
         )

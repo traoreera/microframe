@@ -175,6 +175,7 @@ from authx.exceptions import (
     CredentialsException,
     InvalidTokenException,
     TokenExpiredException,
+    UserNotFoundException,
 )
 from authx.jwt import create_access_token, create_refresh_token, create_token, decode_token
 from authx.manager import AuthManager
@@ -191,6 +192,7 @@ __all__ = [
     "CredentialsException",
     "InvalidTokenException",
     "TokenExpiredException",
+    "UserNotFoundException",
     "verify_password",
     "hash_password",
     "create_access_token",

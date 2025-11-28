@@ -67,9 +67,8 @@ class TestRouter:
     @pytest.mark.asyncio
     async def test_nested_routers(self):
         """Test nested router inclusion"""
-        app = Application()
 
-        # Main API router
+        app = Application()
         api_router = Router(prefix="/api")
 
         users_router = Router(prefix="/users", tags=["Users"])
@@ -83,18 +82,15 @@ class TestRouter:
         async def get_user(user_id: str):
             return {"user_id": user_id}
 
-            # Posts sub-router
-
         @posts_router.get("/")
         async def list_posts():
             return {"posts": []}
 
-            # Include sub-routers
-
         api_router.include_router(users_router)
         api_router.include_router(posts_router)
-
-        app.include_router(api_router, "/api")
+        app.include_router(
+            api_router,
+        )
 
         async with AsyncClient(app=app, base_url="http://test") as client:
             # Test users routes

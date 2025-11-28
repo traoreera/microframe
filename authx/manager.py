@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 
-from annotated_types import doc
-
 from authx.models import LoginRequest, UserResponse
 
 

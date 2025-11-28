@@ -63,4 +63,6 @@ Thumbs.db
 #other
 .ecommerce/
 templates/
-apps/
+app
+main.py
+coverage.xml

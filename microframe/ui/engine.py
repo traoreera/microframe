@@ -25,7 +25,7 @@ class TemplateEngine:
                 bytecode_cache=jinja2.FileSystemBytecodeCache(str(cache_dir)),
                 trim_blocks=True,
                 lstrip_blocks=True,
-                autoescape=True
+                autoescape=True,
             )
         else:
             self.env = jinja2.Environment(
@@ -34,7 +34,7 @@ class TemplateEngine:
                 enable_async=True,
                 trim_blocks=True,
                 lstrip_blocks=True,
-                autoescape=True
+                autoescape=True,
             )
 
         self.env.add_extension(ComponentExtension)

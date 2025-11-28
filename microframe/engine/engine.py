@@ -11,8 +11,8 @@ import httpx
 import jinja2
 from markupsafe import Markup, escape
 from starlette.requests import Request
-from starlette.responses import HTMLResponse
-from starlette.responses import JSONResponse
+from starlette.responses import HTMLResponse, JSONResponse
+
 from .cache import CacheManager
 from .component import ComponentExtension, auto_register_components
 from .filters import (
@@ -23,7 +23,7 @@ from .filters import (
     filter_truncate,
 )
 from .globals import breadcrumbs, generate_csrf_token, paginate
-from uuid import uuid4
+
 logger = logging.getLogger(__name__)
 
 
@@ -123,40 +123,32 @@ class TemplateEngine:
             return html
 
         protected_blocks = [
-            "<svg[\s\S]*?</svg>",
-            "<path[\s\S]*?</path>",  # SVG paths
+            r"<svg[\s\S]*?</svg>",
+            r"<path[\s\S]*?</path>",  # SVG paths
             "{{.*?}}",
         ]
+
         def save_block(match):
             protected_blocks.append(match.group(0))
             return f"___PROTECTED_{len(protected_blocks)-1}___"
 
-        html = re.sub(r'<(pre|textarea|script)[\s\S]*?</\1>',save_block,
-            html,
-            flags=re.IGNORECASE
-        )
-        html = re.sub(
-            r'<(pre|textarea|script)[\s\S]*?</\1>',
-            save_block,
-            html,
-            flags=re.IGNORECASE
-        )
-        html = re.sub(r'<!--(?!\[if).*?-->', '', html, flags=re.DOTALL)
-        
+        html = re.sub(r"<(pre|textarea|script)[\s\S]*?</\1>", save_block, html, flags=re.IGNORECASE)
+        html = re.sub(r"<(pre|textarea|script)[\s\S]*?</\1>", save_block, html, flags=re.IGNORECASE)
+        html = re.sub(r"<!--(?!\[if).*?-->", "", html, flags=re.DOTALL)
+
         # Réduire les espaces multiples (mais garder au moins un espace)
-        html = re.sub(r'[ \t]+', ' ', html)
-        
+        html = re.sub(r"[ \t]+", " ", html)
+
         # Supprimer les espaces autour des balises (plus sûr)
-        html = re.sub(r'>\s+<', '><', html)
-        
+        html = re.sub(r">\s+<", "><", html)
+
         # Supprimer les sauts de ligne inutiles
-        html = re.sub(r'\n\s*\n', '\n', html)
-        
+        html = re.sub(r"\n\s*\n", "\n", html)
+
         # Restaurer les blocs protégés
         for i, block in enumerate(protected_blocks):
             html = html.replace(f"___PROTECTED_{i}___", block)
-        
-        
+
         return html.strip()
 
     def _get_cache_key(self, template_name: str, ctx: dict) -> str:
@@ -164,7 +156,6 @@ class TemplateEngine:
         ctx_str = json.dumps(ctx, sort_keys=True, default=str)
         key_str = f"{template_name}:{ctx_str}"
         return hashlib.sha224(key_str.encode()).hexdigest()
-    
 
     async def render(
         self,
@@ -175,7 +166,6 @@ class TemplateEngine:
     ):
         """Render a template with context"""
         ctx = ctx or {}
-        
 
         # Check cache
         if use_cache is None:
@@ -198,7 +188,8 @@ class TemplateEngine:
                 logger.debug(f"Using HTMX partial: {partial_path}")
 
         try:
-            ctx["request"] = request #TODO: request poluais le cache ducoup on la exclu du cache Manager
+            # TODO: request poluais le cache ducoup on la exclu du cache Manager
+            ctx["request"] = request
             start_time = time.time()
             template = self.env.get_template(template_name)
             html = await template.render_async(**ctx)
@@ -243,7 +234,7 @@ class TemplateEngine:
                 response = await client.get(url, params=kwargs)
                 response.raise_for_status()
                 return Markup(response.text)
-            
+
         except httpx.TimeoutException:
             logger.error(f"MFE '{name}' timed out after {self.mfe_timeout}s")
             return f"<!-- MFE '{name}' timeout -->"
