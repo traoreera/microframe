@@ -4,7 +4,7 @@ Tests for AppConfig
 
 import pytest
 
-from microframe.core import AppConfig
+from microframe import AppConfig
 
 
 class TestAppConfig:

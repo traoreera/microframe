@@ -32,7 +32,7 @@ class ThemeManager:
             key=ThemeManager.COOKIE_NAME,
             value=theme,
             max_age=ThemeManager.COOKIE_MAX_AGE,
-            httponly=False,  # Permettre l'accès JS si besoin
+            httponly=True,  # Permettre l'accès JS si besoin
             samesite="lax",
             path="/",  # Important : disponible sur tout le site
         )

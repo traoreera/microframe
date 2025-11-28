@@ -1,43 +1,86 @@
-# Makefile
-.PHONY: help install dev test lint format clean run
 
-help:
-	@echo "Commandes disponibles:"
-	@echo "  make install    - Installer les dépendances"
-	@echo "  make dev        - Installer les dépendances de développement"
-	@echo "  make test       - Lancer les tests"
-	@echo "  make lint       - Vérifier le code (flake8, mypy)"
-	@echo "  make format     - Formater le code (black)"
-	@echo "  make clean      - Nettoyer les fichiers générés"
-	@echo "  make run        - Lancer l'application"
 
-install:
-	pip install -r requirements.txt
 
-dev:
-	pip install -r requirements.txt
-	pip install -e .
+# ============================================================
+# 📚 Commande HELP - Affiche toutes les commandes disponibles
+# ============================================================
+help: ## Afficher la liste des commandes disponibles et leur usage
+	@echo "📚 Liste des commandes disponibles :"
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
+		| sort \
+		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-test:
-	pytest tests/ -v --cov=microframework --cov-report=html
+clean: ## Supprimer __pycache__ et fichiers *.pyc, *.pyo
+	@echo "🧹 Nettoyage des fichiers inutiles..."
+	@find . -type d -name "__pycache__" -exec rm -rf {} +
+	@find . -type f \( -name "*.backup" -o -name "*.backup" \) -exec rm -f {} +
+	@find . -type f \( -name "*.pyc" -o -name "*.pyo" \) -exec rm -f {} +
 
-lint:
-	flake8 microframework tests
-	mypy microframework
+# ============================================================
+# 📦 Installation & initialisation projet
+# ============================================================
 
-format:
-	black microframework tests examples
+install: ## Installer les dépendances Python via Poetry
+	@poetry lock
+	@poetry install
 
-clean:
-	find . -type d -name __pycache__ -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
-	find . -type f -name "*.pyo" -delete
-	find . -type d -name "*.egg-info" -exec rm -rf {} +
-	rm -rf build dist .pytest_cache .coverage htmlcov
+# ============================================================
+# 🚀 Lancement de l'application
+# ============================================================
 
-run:
-	poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000
+run-dev: ## Lancer en mode développement (reload automatique)
+	@echo "🚀 Lancement en mode développement..."
+	@poetry run python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
+run-st: ## Lancer en mode production / statique (sans reload)
+	@echo "🚀 Lancement en mode statique..."
+	@poetry run python -m uvicorn main:app --host 0.0.0.0 --port 8000
+
+
+
+# ============================================================
+# 🏗️  Build & Correction automatique du code
+# ============================================================
+
+build: ## Build complet du projet (clean + install + lint-fix + format)
+	@echo "🏗️  CONSTRUCTION DU PROJET"
+	@echo "==========================="
+	@echo ""
+	@echo "🧹 1. Nettoyage des fichiers compilés..."
+	@$(MAKE) clean
+	@echo ""
+	@echo "📦 2. Installation des dépendances..."
+	@$(MAKE) install
+	@echo ""
+	@echo "🔧 3. Correction automatique du code..."
+	@$(MAKE) lint-fix
+	@echo ""
+	@echo "✅ Build terminé avec succès!"
+	@poetry build
+
+build-prod: ## Build pour production (build + tests + validation)
+	@echo "🚀 BUILD PRODUCTION"
+	@echo "=================="
+	@echo ""
+	@$(MAKE) build
+	@echo ""
+	@echo "🧪 5. Exécution des tests..."
+	@$(MAKE) test
+	@echo ""
+	@echo "🔒 6. Validation sécurité..."
+	@$(MAKE) security-check
+	@echo ""
+	@poetry build --no-cache
+	@echo "🎉 Build production prêt!"
+	
+
+build-fast: ## Build rapide (clean + install uniquement)
+	@echo "⚡ BUILD RAPIDE"
+	@echo "=============="
+	@$(MAKE) clean
+	@$(MAKE) install
+	@poetry build
+	@echo "✅ Build rapide terminé!"
 
 lint-fix: ## Correction automatique des erreurs de linting (SAFE - préserve imports)
 	@echo "🔧 Correction automatique du code (mode SAFE)..."
@@ -50,3 +93,23 @@ lint-fix: ## Correction automatique des erreurs de linting (SAFE - préserve imp
 	@echo "📋 4. Suppression CONSERVATIVE des variables inutiles (préserve imports)..."
 	@poetry run autoflake --in-place --recursive --remove-unused-variables --ignore-init-module-imports --exclude=alembic,static,__pycache__ .
 	@echo "✅ Correction automatique terminée (imports préservés)!"
+
+test: ## Exécution des tests
+	@echo "🧪 Exécution des tests..."
+	@poetry run pytest tests/ --cov --cov-branch --cov=src --cov-report=xml; 
+
+
+security-check: ## Vérification de sécurité basique
+	@echo "🔒 Vérification de sécurité..."
+	@echo "✅ Vérification .env (ne pas commiter)"
+	@if git ls-files | grep -q "\.env$$"; then \
+		echo "❌ ATTENTION: .env est tracké par git!"; \
+	else \
+		echo "✅ .env correctement ignoré"; \
+	fi
+	@echo "✅ Vérification des mots de passe hardcodés..."
+	@if grep -r "password\s*=\s*[\"'][^\"']*[\"']" . --exclude-dir=.git --exclude-dir=static --exclude-dir=__pycache__ 2>/dev/null; then \
+		echo "❌ ATTENTION: Mots de passe potentiels trouvés!"; \
+	else \
+		echo "✅ Aucun mot de passe hardcodé détecté"; \
+	fi

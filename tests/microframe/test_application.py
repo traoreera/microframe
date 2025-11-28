@@ -6,8 +6,7 @@ import pytest
 from httpx import AsyncClient
 from pydantic import BaseModel
 
-from microframe import Application, Router
-from microframe.core import AppConfig
+from microframe import AppConfig, Application, Router
 
 
 class TestApplication:

@@ -26,23 +26,23 @@
 
 ### 🐛 Bugs Critiques à Fixer
 
-#### 1. **Tests Hanging** 🔴 P0
+#### 1. **Tests Hanging** 🟡 P0 (resolue)   # vesion V2.0.0 
 **Fichier** : `tests/`  
-**Problème** : Tests ne se terminent jamais avec pytest  
-**Impact** : Bloque le développement et CI/CD
+**Problème** : Tests ne se terminent jamais avec  
+**Impact** : Bloque le développement et CI/CD 
 
 **Actions** :
-- [ ] Investiguer imports circulaires
-- [ ] Vérifier fixtures async mal configurées
-- [ ] Ajouter cleanup async manquant
-- [ ] Tester avec `pytest -v -s` pour debug
-- [ ] Isoler tests problématiques
+- [x] Investiguer imports circulaires -> corige
+- [x] Vérifier fixtures async mal configurées
+- [x] Ajouter cleanup async manquant
+- [x] Tester avec `pytest -v -s` pour debug
+- [x] Isoler tests problématiques
 
-**Estimation** : 2-3 jours
-
+**Estimation** : 2-3 jours (termine le 27/11/2025)
+**teste encore** : des teste unitaire reste a corige et a re-evalue
 ---
 
-#### 2. **AuthX JWT Decode Double Exception** 🟢 P2
+#### 2. **AuthX JWT Decode Double Exception** 🟢 P2 (# resolue et gestion des raises exceptions)
 **Fichier** : `authx/jwt.py:52-53`  
 **Problème** : Code mort - deuxième `except JWTError` jamais atteint
 
@@ -64,14 +64,17 @@ except JWTError:
     raise InvalidTokenException()
 ```
 
-**Actions** :
-- [ ] Différencier exceptions JWT
-- [ ] Tester avec token expiré
-- [ ] Tester avec token invalide
-- [ ] Mettre à jour tests
+**Actions** : 
+- [x] Différencier exceptions JWT  
+- [x] Tester avec token expiré
+- [x] Tester avec token invalide
+- [x] Mettre à jour tests
 
 **Estimation** : 1 jour
-
+##### Resolue termine le 25/11/2025
+- gestion des raises exceptions
+- supression des conditions morts
+- verification et verification conforme 
 ---
 
 #### 3. **AuthX Depends Incompatibilité** 🟡 P1
@@ -79,13 +82,17 @@ except JWTError:
 **Problème** : Deux systèmes Depends incompatibles
 
 **Actions** :
-- [ ] Unifier AuthX pour utiliser `microframe.Depends`
-- [ ] Supprimer `authx/dependencies.py` ou l'adapter
-- [ ] Mettre à jour imports dans `authx/`
-- [ ] Tests d'intégration authx + microframe
-- [ ] Documenter dans migration guide
+- [x] Unifier AuthX pour utiliser `microframe.Depends`
+- [x] Supprimer `authx/dependencies.py` ou l'adapter
+- [x] Mettre à jour imports dans `authx/`
+- [x] Tests d'intégration authx + microframe
+- [x] Documenter dans migration guide
 
 **Estimation** : 3-4 jours
+##### Resolue en moins de deux
+- supresion de `authx Depends` il heritera de `microframe Depends`
+- cache unifier a l'application pricipal
+- le guide de mise en place de `auth` est fourmit dans `docs/authx`
 
 ---
 
@@ -108,6 +115,7 @@ self.locks: Dict[str, asyncio.Lock] = {}  # Lock per client
 - [ ] Documentation performance
 
 **Estimation** : 2 jours
+##### gestion du midlware est un autre taff fatigue je le laisse en P1
 
 ---
 
@@ -118,14 +126,15 @@ self.locks: Dict[str, asyncio.Lock] = {}  # Lock per client
 **Actions** :
 - [x] Index principal (`docs/README.md`) ✅
 - [x] Getting Started (`docs/guides/getting-started.md`) ✅
-- [ ] Authentication guide (`docs/guides/authentication.md`)
-- [ ] WebSocket guide (`docs/guides/websocket-chat.md`)
-- [ ] Deployment guide (`docs/guides/deployment.md`)
-- [ ] Best practices (`docs/guides/best-practices.md`)
-- [ ] Templates docs (`docs/microframe/templates.md`)
-- [ ] Configurations docs (`docs/microframe/configurations.md`)
+- [x] Authentication guide (`docs/guides/authentication.md`)
+- [x] WebSocket guide (`docs/guides/websocket-chat.md`)
+- [x] Deployment guide (`docs/guides/deployment.md`)
+- [x] Best practices (`docs/guides/best-practices.md`)
+- [x] Templates docs (`docs/microframe/templates.md`)
+- [x] Configurations docs (`docs/microframe/configurations.md`)
 
 **Estimation** : 1 semaine
+##### bas fini mai a relire pour s'assure
 
 ---
 
@@ -144,14 +153,17 @@ self.locks: Dict[str, asyncio.Lock] = {}  # Lock per client
 - [ ] `configurations/` - De 20% → 80%
 - [ ] `utils/` - De 40% → 80%
 
+#TODO: les test unitaire prenne pas en compte pour l'instant `authx` et `ws` 
+
 **Actions** :
 - [ ] Tests unitaires pour tous modules
 - [ ] Tests d'intégration authx + app
 - [ ] Tests WebSocket avec clients multiples
-- [ ] Tests de charge (benchmark)
+- [ ] Tests de charge (benchmark) 
+
 
 **Estimation** : 2 semaines
-
+##### Pour l'instant je sais pas comment faire le teste de charge 
 ---
 
 #### 2. **Tests End-to-End** 🟢
@@ -162,7 +174,7 @@ self.locks: Dict[str, asyncio.Lock] = {}  # Lock per client
 - [ ] CI/CD pipeline complet
 
 **Estimation** : 1 semaine
-
+##### compte pypi pour ci-cd et pour entreprise avec un build label
 ---
 
 ### 🔒 Sécurité
@@ -174,7 +186,7 @@ self.locks: Dict[str, asyncio.Lock] = {}  # Lock per client
 - [ ] Security policy documented
 - [ ] OWASP checklist
 - [ ] Dependency security updates
-
+TODO: test de vulnerabilite 
 **Estimation** : 1 semaine
 
 ---
@@ -188,7 +200,7 @@ self.locks: Dict[str, asyncio.Lock] = {}  # Lock per client
 - [ ] Documentation
 
 **Estimation** : 3-4 jours
-
+TODO: crf token doit etre pas defaut dans les forms 
 ---
 
 ### 🚀 Améliorations Performance
@@ -207,12 +219,12 @@ self.locks: Dict[str, asyncio.Lock] = {}  # Lock per client
 #### 6. **Template Bytecode Cache** 🟡
 **Fichier** : `engine/engine.py`  
 **Actions** :
-- [ ] Persistence compiled templates
-- [ ] Template preloading
-- [ ] Bytecode cache optimisé
+- [x] Persistence compiled templates
+- [x] Template preloading
+- [x] Bytecode cache optimisé
 
 **Estimation** : 2-3 jours
-
+##### fait resolue et pres a teste 
 ---
 
 ### 📦 Compatibilité
@@ -227,12 +239,12 @@ self.locks: Dict[str, asyncio.Lock] = {}  # Lock per client
 - [ ] Documenter compatibilité
 
 **Estimation** : 1 semaine
-
+#TODO: tres important la retrocompatibilite
 ---
 
 ## 🎨 v2.2.0 - Features Avancées (Q2 2025)
 
-> **Date cible** : Juin 2025  
+> **Date cible** : Juin 2026  
 > **Focus** : Nouvelles fonctionnalités
 
 ### 🗄️ Database Layer
@@ -344,7 +356,7 @@ microframe run --reload
 
 ## 🚀 v3.0.0 - Architecture Majeure (Q3-Q4 2025)
 
-> **Date cible** : Septembre-Décembre 2025  
+> **Date cible** : Septembre-Décembre 2026  
 > **Focus** : Breaking changes, architecture moderne
 
 ### 🎨 Plugin Architecture

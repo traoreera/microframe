@@ -5,8 +5,7 @@ pytest configuration and shared fixtures
 import pytest
 from httpx import AsyncClient
 
-from microframe import Application
-from microframe.core import AppConfig
+from microframe import AppConfig, Application
 
 
 @pytest.fixture

@@ -27,9 +27,9 @@ Ce moteur est un **hybride intéressant** entre :
 
 ### **Points faibles / améliorations**
 
-#### **Thread-safety**
+#### **Thread-safety** [#resolved](#cachemanager)
 
-Le `CacheManager` en mémoire n’est **pas thread-safe** → si tu passes sous Uvicorn/Gunicorn multi-workers, collisions possibles.
+Le `CacheManager` en mémoire n’est **pas thread-safe** → si tu passes sous Uvicorn/Gunicorn multi-workers, collisions possibles 
 
 `Ajouter un verrou ou remplacer par un backend opt-in (Redis/Memcached).`
 
@@ -42,7 +42,7 @@ Idéal : calculer un digest MD5 sur le fichier statique → invalidation naturel
 
 ---
 
-#### **render_mfe_async**
+#### **render_mfe_async** [#resolved](#render_mfe_async-resolved)
 
 Tu devrais supporter :
 
@@ -92,7 +92,7 @@ add_component()
 
 ---
 
-### **🚀 Refonte modulaire proposée**
+### **🚀 Refonte modulaire proposée** [#resolved](#modularity)
 
 Découper en modules pour lisibilité :
 
@@ -124,22 +124,10 @@ engine/
 Bon moteur.
 Tu es déjà au-dessus d’un Django Template Engine ou Starlette/Jinja factory classique.
 
-Ça sent la **roadmap framework hybride SSR + Web Components + HTMX**.
 
-Si tu veux, je peux :
+### cacheManager
 
-* Faire la **documentation officielle**
-* Le **refactorer en paquet pip**
-* Ajouter une **CLI scaffolder (`mfe add`, `component create`, etc.)**
-* Ou l’intégrer en backend Microframe si c’est ton objectif
 
----
+### modularity
 
-Tu veux la suite dans quel sens ?
-
-* 🔧 *Industrialisation / packaging*
-* 🧪 *Optimisation performance*
-* 📦 *Refactor modulaire*
-* 🏗 *Ajout features (streaming, macros, hydration…)*
-
-Dis-moi la direction.
+### render_mfe_async-resolved
