@@ -1,5 +1,7 @@
-# app/engine/component_extension.py
+# app/engine/component_extension.py - Version avec support async complet
 
+import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -8,13 +10,17 @@ from jinja2 import nodes
 from jinja2.ext import Extension
 from markupsafe import Markup
 
+logger = logging.getLogger(__name__)
+
 
 class ComponentRegistry:
+    """Registry for storing component templates."""
     registry = {}
 
     @classmethod
     def register(cls, name, template):
         cls.registry[name] = template
+        logger.info(f"✓ Registered component: {name}")
 
     @classmethod
     def get(cls, name):
@@ -27,9 +33,14 @@ class ComponentRegistry:
     @classmethod
     def delete(cls, name):
         cls.registry.pop(name, None)
+    
+    @classmethod
+    def list_components(cls):
+        return sorted(cls.registry.keys())
 
 
-class ComponentExtension(Extension):
+class ComponentTag(Extension):
+    """Extension that handles {% component %} tags with async support."""
     tags = {"component"}
 
     def parse(self, parser):
@@ -45,31 +56,138 @@ class ComponentExtension(Extension):
 
         body = parser.parse_statements(("name:endcomponent",), drop_needle=True)
 
+        # ✅ Use _render_async for async support
         return nodes.CallBlock(
-            self.call_method("_render", [component_name], props), [], [], body
+            self.call_method("_render_async", [component_name], props), 
+            [], 
+            [], 
+            body
         ).set_lineno(lineno)
 
-    def _render(self, name, caller, **props) -> str | Any:
+    async def _render_async(self, name, caller, **props):
+        """Async version of render that properly awaits caller()."""
         template = ComponentRegistry.get(name)
         if not template:
-            return f"<p class='error'>Component '{name}' not found</p>"
+            logger.warning(f"Component '{name}' not found")
+            return f"<!-- Component '{name}' not found -->"
 
-        props["slot"] = Markup(caller())
         try:
-            return jinja2.Template(template).render(**props)
+            # ✅ Await the caller coroutine
+            slot_content = await caller()
+            props["slot"] = Markup(slot_content) if slot_content else Markup("")
         except Exception as e:
-            return f"<p class='error'>Error rendering component '{name}': {e}</p>"
+            logger.error(f"Error getting slot content: {e}")
+            props["slot"] = Markup("")
+
+        try:
+            # Use self.environment and render async
+            template_obj = self.environment.from_string(template)
+            result = await template_obj.render_async(**props)
+            return result
+        except Exception as e:
+            logger.exception(f"Error rendering component '{name}'")
+            return f"<!-- Error rendering component '{name}': {e} -->"
+
+
+class ComponentExtensions(Extension):
+    """Preprocessor for <component.X> syntax."""
+
+    def preprocess(self, source, name, filename=None):
+        """Convert <component.X> to {% component %} tags."""
+        return self._convert_components(source)
+
+    def _convert_components(self, source: str) -> str:
+        """Convert <component.X> syntax to {% component %} syntax."""
+        
+        def parse_props(props_str: str) -> str:
+            """Parse HTML-like attributes to Jinja2 kwargs."""
+            if not props_str.strip():
+                return ""
+            
+            props = []
+            pattern = r'(\w+)=(?:"([^"]*)"|\'([^\']*)\'|(\d+\.?\d*)|(\w+))'
+            matches = re.findall(pattern, props_str)
+            
+            for match in matches:
+                key = match[0]
+                if match[1]:  # Double quotes
+                    if '{{' in match[1] or '{%' in match[1]:
+                        props.append(f'{key}={match[1]}')
+                    else:
+                        props.append(f'{key}="{match[1]}"')
+                elif match[2]:  # Single quotes
+                    if '{{' in match[2] or '{%' in match[2]:
+                        props.append(f'{key}={match[2]}')
+                    else:
+                        props.append(f'{key}="{match[2]}"')
+                elif match[3]:  # Numbers
+                    props.append(f'{key}={match[3]}')
+                elif match[4]:  # Boolean or bare words
+                    lower = match[4].lower()
+                    if lower in ('true', 'false', 'none', 'null'):
+                        props.append(f'{key}={lower}')
+                    else:
+                        props.append(f'{key}={match[4]}')
+            
+            return " " + " ".join(props) if props else ""
+
+        # Block components
+        block_pattern = re.compile(
+            r'<component\.(\w+)([^>]*)>(.*?)</component\.\1>',
+            re.DOTALL
+        )
+        
+        def replace_block(match):
+            name, props_str, slot_content = match.groups()
+            props = parse_props(props_str)
+            return f'{{% component "{name}"{props} %}}{slot_content}{{% endcomponent %}}'
+        
+        source = re.sub(block_pattern, replace_block, source)
+        
+        # Self-closing components
+        self_closing_pattern = re.compile(r'<component\.(\w+)([^/]*)/>')
+        
+        def replace_self_closing(match):
+            name, props_str = match.groups()
+            props = parse_props(props_str)
+            return f'{{% component "{name}"{props} %}}{{% endcomponent %}}'
+        
+        source = re.sub(self_closing_pattern, replace_self_closing, source)
+        
+        return source
 
 
 def auto_register_components(folder):
-    """_summary_
-
+    """Auto-register components from folder.
+    
     Args:
         folder (str): path to folder containing components
     """
     folder = Path(folder)
     if not folder.exists():
-        return
+        logger.warning(f"Components folder '{folder}' does not exist")
+        return 0
 
+    count = 0
     for file in folder.glob("*.html"):
-        ComponentRegistry.register(file.stem, file.read_text())
+        try:
+            ComponentRegistry.register(file.stem, file.read_text(encoding="utf-8"))
+            count += 1
+        except Exception as e:
+            logger.error(f"Failed to load '{file.stem}': {e}")
+    
+    if count > 0:
+        logger.info(f"✓ Loaded {count} components from {folder}")
+    
+    return count
+
+
+def register_component(name: str, template: str):
+    """Register a single component."""
+    ComponentRegistry.register(name, template)
+
+
+def register_components(components: dict):
+    """Register multiple components at once."""
+    for name, template in components.items():
+        ComponentRegistry.register(name, template)

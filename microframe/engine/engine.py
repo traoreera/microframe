@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
-
+from jinja2.ext import Extension
 import httpx
 import jinja2
 from markupsafe import Markup, escape
@@ -14,7 +14,7 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse
 
 from .cache import CacheManager
-from .component import ComponentExtension, auto_register_components
+from .component import ComponentTag, auto_register_components, ComponentExtensions
 from .filters import (
     filter_currency,
     filter_json_pretty,
@@ -40,6 +40,7 @@ class TemplateEngine:
         enable_template_cache=False,
         template_cache_ttl=300,
         template_cache: Optional[CacheManager | Any] = CacheManager(),
+        extensions:list[Extension] = None,
     ):
         self.directory = directory
         self.mfe_timeout = mfe_timeout
@@ -75,7 +76,15 @@ class TemplateEngine:
             )  # type: ignore
 
         self.env = jinja2.Environment(**options)  # type: ignore
-        self.env.add_extension(ComponentExtension)
+
+        # Register extensions
+        if extensions is None:
+            extensions = [ComponentTag, ComponentExtensions]
+        for ext in[jinja2.ext.i18n, ComponentTag, ComponentExtensions]:
+            extensions.append(ext)
+        
+        for extension in extensions:
+            self.env.add_extension(extension)
 
         # Register global functions
         self.env.globals.update(
