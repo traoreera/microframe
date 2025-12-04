@@ -2,6 +2,7 @@ import json
 import re
 from datetime import datetime
 from typing import Any
+from markupsafe import Markup
 
 
 def filter_truncate(text: str, length: int = 100, suffix: str = "..."):
@@ -46,3 +47,16 @@ def filter_timeago(dt: datetime):
 def filter_json_pretty(obj: Any):
     """Pretty print JSON"""
     return json.dumps(obj, indent=2, ensure_ascii=False)
+
+
+
+def register_filter():
+
+    return  {
+        "json": lambda obj: Markup(json.dumps(obj, ensure_ascii=False)),
+        "json_pretty": filter_json_pretty,
+        "truncate": filter_truncate,
+        "slugify": filter_slugify,
+        "currency": filter_currency,
+        "timeago": filter_timeago,
+    }

@@ -1,5 +1,5 @@
 from typing import Dict, Optional
-
+from pathlib import Path
 from starlette.requests import Request
 
 from .component import ComponentRegistry
@@ -27,3 +27,31 @@ def register_mfe(name: str, url: str):
 def register_mfes(mfes: Dict[str, str]):
     """Register multiple micro-frontends"""
     get_engine().register_mfes(mfes)
+
+def auto_register_components(folder):
+    """Auto-register components from folder.
+    
+    Args:
+        folder (str): path to folder containing components
+    """
+    folder = Path(folder)
+    if not folder.exists():
+        raise NotADirectoryError(f"Folder not found: {folder}")
+    
+    for file in folder.glob("*.html"):
+        try:
+            ComponentRegistry.register(file.stem, file.read_text(encoding="utf-8"))
+            count += 1
+        except Exception as e:
+            raise e from e
+
+
+def register_component(name: str, template: str):
+    """Register a single component."""
+    ComponentRegistry.register(name, template)
+
+
+def register_components(components: dict):
+    """Register multiple components at once."""
+    for name, template in components.items():
+        ComponentRegistry.register(name, template)

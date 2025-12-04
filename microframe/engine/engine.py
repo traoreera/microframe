@@ -3,26 +3,19 @@ import json
 import logging
 import re
 import time
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 from jinja2.ext import Extension
 import httpx
 import jinja2
-from markupsafe import Markup, escape
+from markupsafe import Markup
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, JSONResponse
+from starlette.responses import HTMLResponse
 
 from .cache import CacheManager
-from .component import ComponentTag, auto_register_components, ComponentExtensions
-from .filters import (
-    filter_currency,
-    filter_json_pretty,
-    filter_slugify,
-    filter_timeago,
-    filter_truncate,
-)
-from .globals import breadcrumbs, generate_csrf_token, paginate
+from .component import ComponentTag, ComponentExtensions, auto_register_components
+from .filters import register_filter
+from .globals import register_gobals
 
 logger = logging.getLogger(__name__)
 
@@ -80,43 +73,29 @@ class TemplateEngine:
         # Register extensions
         if extensions is None:
             extensions = [ComponentTag, ComponentExtensions]
-        for ext in[jinja2.ext.i18n, ComponentTag, ComponentExtensions]:
-            extensions.append(ext)
-        
+        extensions.extend(iter([jinja2.ext.i18n, ComponentTag, ComponentExtensions]))
         for extension in extensions:
             self.env.add_extension(extension)
 
+
         # Register global functions
-        self.env.globals.update(
+        globals_func = register_gobals()
+        globals_func.update(
             {
                 "static": self._static_url,
                 "url": self._build_url,
                 "render_mfe": self.render_mfe_async,
-                "csrf_token": generate_csrf_token,
-                "paginate": paginate,
-                "breadcrumbs": breadcrumbs,
-                "now": datetime.now,
             }
         )
+        self.env.globals.update(globals_func)
 
         # Register filters
-        self.env.filters.update(
-            {
-                "json": lambda obj: Markup(json.dumps(obj, ensure_ascii=False)),
-                "json_pretty": filter_json_pretty,
-                "truncate": filter_truncate,
-                "slugify": filter_slugify,
-                "currency": filter_currency,
-                "timeago": filter_timeago,
-            }
-        )
+        self.env.filters.update(register_filter())
 
     def _static_url(self, path: str):
         """Generate static URL with versioning"""
         version = self.asset_versions.get(path, "")
-        if version:
-            return f"/static/{path}?v={version}"
-        return f"/static/{path}"
+        return f"/static/{path}?v={version}" if version else f"/static/{path}"
 
     def _build_url(self, name, **params):
         """Build URL with optional query parameters"""
@@ -182,8 +161,9 @@ class TemplateEngine:
 
         if use_cache:
             cache_key = self._get_cache_key(template_name, ctx)
-            cached = self.template_cache.get(cache_key, self.template_cache_ttl)
-            if cached:
+            if cached := self.template_cache.get(
+                cache_key, self.template_cache_ttl
+            ):
                 logger.debug(f"Cache hit for template: {template_name}")
                 return HTMLResponse(cached)
 
@@ -193,8 +173,8 @@ class TemplateEngine:
             full_path = Path(self.directory) / partial_path
 
             if full_path.exists():
-                template_name = partial_path
                 logger.debug(f"Using HTMX partial: {partial_path}")
+                template_name = partial_path
 
         try:
             # TODO: request poluais le cache ducoup on la exclu du cache Manager

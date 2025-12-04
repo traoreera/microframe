@@ -81,9 +81,16 @@ class ComponentTag(Extension):
 
         try:
             # Use self.environment and render async
+            if hasattr(template, "render"):
+                slot_content = await caller()
+                props["children"] = slot_content
+                template.props = props
+                template.children = slot_content
+                return template.render(self:=template)
+
+
             template_obj = self.environment.from_string(template)
-            result = await template_obj.render_async(**props)
-            return result
+            return await template_obj.render_async(**props)
         except Exception as e:
             logger.exception(f"Error rendering component '{name}'")
             return f"<!-- Error rendering component '{name}': {e} -->"
@@ -165,29 +172,10 @@ def auto_register_components(folder):
     """
     folder = Path(folder)
     if not folder.exists():
-        logger.warning(f"Components folder '{folder}' does not exist")
-        return 0
-
-    count = 0
+        raise NotADirectoryError(f"Folder not found: {folder}")
+    
     for file in folder.glob("*.html"):
         try:
             ComponentRegistry.register(file.stem, file.read_text(encoding="utf-8"))
-            count += 1
         except Exception as e:
-            logger.error(f"Failed to load '{file.stem}': {e}")
-    
-    if count > 0:
-        logger.info(f"✓ Loaded {count} components from {folder}")
-    
-    return count
-
-
-def register_component(name: str, template: str):
-    """Register a single component."""
-    ComponentRegistry.register(name, template)
-
-
-def register_components(components: dict):
-    """Register multiple components at once."""
-    for name, template in components.items():
-        ComponentRegistry.register(name, template)
+            raise e from e

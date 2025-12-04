@@ -1,3 +1,4 @@
+from datetime import datetime
 import hashlib
 import time
 
@@ -47,3 +48,12 @@ def breadcrumbs(request: Request = None):
         crumbs.append({"name": part.replace("-", " ").title(), "url": current_path})
 
     return crumbs
+
+
+def register_gobals():
+    return {
+        "csrf_token": generate_csrf_token,
+        "paginate": paginate,
+        "breadcrumbs": breadcrumbs,
+        "now": datetime.now,
+    }
