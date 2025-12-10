@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict
 from pydantic import BaseModel, ValidationError
 from starlette.requests import Request
 
-from ..dependencies.exceptionHandler import Depends
+from ..dependencies.manager import Depends
 from ..exceptions.exception import ValidationException
 
 logger = logging.getLogger(__name__)

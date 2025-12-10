@@ -14,7 +14,7 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse
 
 from .cache import CacheManager
-from .component import ComponentExtension, auto_register_components
+from .component import ComponentExtension, ComponentExtensions, auto_register_components
 from .filters import (
     filter_currency,
     filter_json_pretty,
@@ -76,6 +76,7 @@ class TemplateEngine:
 
         self.env = jinja2.Environment(**options)  # type: ignore
         self.env.add_extension(ComponentExtension)
+        self.env.add_extension(ComponentExtensions)
 
         # Register global functions
         self.env.globals.update(
@@ -185,8 +186,7 @@ class TemplateEngine:
 
             if full_path.exists():
                 template_name = partial_path
-                logger.debug(f"Using HTMX partial: {partial_path}")
-
+                logger.debug(f"Using HTMX partial: {template_name}")
         try:
             # TODO: request poluais le cache ducoup on la exclu du cache Manager
             ctx["request"] = request

@@ -2,9 +2,7 @@
 
 > Roadmap de développement et corrections pour MicroFrame v2.0+
 
-**Version actuelle** : 2.0.0  
-**Dernière mise à jour** : 2025-11-24  
-**Mainteneur** : [@traoreera](https://github.com/traoreera)
+**Dernière mise à jour** : 2025-12-08**Mainteneur** : [@traoreera](https://github.com/traoreera)
 
 ---
 
@@ -26,77 +24,7 @@
 
 ### 🐛 Bugs Critiques à Fixer
 
-#### 1. **Tests Hanging** 🟡 P0 (resolue)   # vesion V2.0.0 
-**Fichier** : `tests/`  
-**Problème** : Tests ne se terminent jamais avec  
-**Impact** : Bloque le développement et CI/CD 
-
-**Actions** :
-- [x] Investiguer imports circulaires -> corige
-- [x] Vérifier fixtures async mal configurées
-- [x] Ajouter cleanup async manquant
-- [x] Tester avec `pytest -v -s` pour debug
-- [x] Isoler tests problématiques
-
-**Estimation** : 2-3 jours (termine le 27/11/2025)
-**teste encore** : des teste unitaire reste a corige et a re-evalue
----
-
-#### 2. **AuthX JWT Decode Double Exception** 🟢 P2 (# resolue et gestion des raises exceptions)
-**Fichier** : `authx/jwt.py:52-53`  
-**Problème** : Code mort - deuxième `except JWTError` jamais atteint
-
-```python
-# AVANT (bugné)
-try:
-    payload = jwt.decode(...)
-except JWTError:
-    raise TokenExpiredException()
-except JWTError:  # ❌ Jamais atteint !
-    raise InvalidTokenException()
-
-# APRÈS (corrigé)
-try:
-    payload = jwt.decode(...)
-except ExpiredSignatureError:
-    raise TokenExpiredException()
-except JWTError:
-    raise InvalidTokenException()
-```
-
-**Actions** : 
-- [x] Différencier exceptions JWT  
-- [x] Tester avec token expiré
-- [x] Tester avec token invalide
-- [x] Mettre à jour tests
-
-**Estimation** : 1 jour
-##### Resolue termine le 25/11/2025
-- gestion des raises exceptions
-- supression des conditions morts
-- verification et verification conforme 
----
-
-#### 3. **AuthX Depends Incompatibilité** 🟡 P1
-**Fichiers** : `authx/dependencies.py` vs `microframe/dependencies/`  
-**Problème** : Deux systèmes Depends incompatibles
-
-**Actions** :
-- [x] Unifier AuthX pour utiliser `microframe.Depends`
-- [x] Supprimer `authx/dependencies.py` ou l'adapter
-- [x] Mettre à jour imports dans `authx/`
-- [x] Tests d'intégration authx + microframe
-- [x] Documenter dans migration guide
-
-**Estimation** : 3-4 jours
-##### Resolue en moins de deux
-- supresion de `authx Depends` il heritera de `microframe Depends`
-- cache unifier a l'application pricipal
-- le guide de mise en place de `auth` est fourmit dans `docs/authx`
-
----
-
-#### 4. **Rate Limiting Lock Contention** 🟡 P1
+#### 1. **Rate Limiting Lock Contention** 🟡 P1
 **Fichier** : `middleware/security_middleware.py:26`  
 **Problème** : Lock global → bottleneck haute charge
 
@@ -121,11 +49,9 @@ self.locks: Dict[str, asyncio.Lock] = {}  # Lock per client
 
 ### 📚 Documentation Urgente
 
-#### 5. **Compléter Documentation** 🟡 P1
+#### 2. **Compléter Documentation** 🟡 P1
 
 **Actions** :
-- [x] Index principal (`docs/README.md`) ✅
-- [x] Getting Started (`docs/guides/getting-started.md`) ✅
 - [x] Authentication guide (`docs/guides/authentication.md`)
 - [x] WebSocket guide (`docs/guides/websocket-chat.md`)
 - [x] Deployment guide (`docs/guides/deployment.md`)
@@ -216,20 +142,9 @@ TODO: crf token doit etre pas defaut dans les forms
 
 ---
 
-#### 6. **Template Bytecode Cache** 🟡
-**Fichier** : `engine/engine.py`  
-**Actions** :
-- [x] Persistence compiled templates
-- [x] Template preloading
-- [x] Bytecode cache optimisé
-
-**Estimation** : 2-3 jours
-##### fait resolue et pres a teste 
----
-
 ### 📦 Compatibilité
 
-#### 7. **Support Python 3.9+** 🟡 P1
+#### 6. **Support Python 3.9+** 🟡 P1
 **Problème** : Actuellement Python 3.13+ uniquement
 
 **Actions** :

@@ -17,6 +17,9 @@ NAVIGATION_TEMPLATES = {
 - [Application](application.md)
 - [Config](config.md)
 - [Router](router.md)
+- [Routing Models](routing_models.md)
+- [Route Registry](registry.md)
+- [Routing Decorators](decorators.md)
 - [Dependencies](dependencies.md)
 - [Validation](validation.md)
 - [Middleware](middleware.md)
@@ -24,6 +27,9 @@ NAVIGATION_TEMPLATES = {
 - [Templates](templates.md)
 - [UI Components](ui.md)
 - [Configurations](configurations.md)
+- [OpenAPI Generator](openapi.md)
+- [Documentation UI](docs_ui.md)
+- [Logger](logger.md)
 
 ---
 

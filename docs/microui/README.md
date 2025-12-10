@@ -88,7 +88,7 @@ async def landing():
 ## Component Categories
 
 ### Basic Components
-**Button**, **Card**, **Alert**, **Modal**, **Input**, **Table**, **Badge**, **Navbar**, **Loading**
+**Button**, **Card**, **Alert**, **Modal**, **Input**, **Table**, **Badge**, **Navbar**, **Loading**, **Footer**
 
 ### Advanced Components  
 **Sidebar**, **Drawer**, **Tabs**, **Dropdown**, **Avatar**, **Progress**, **Stats**, **Timeline**, **Toast**, **Pagination**
@@ -98,6 +98,8 @@ async def landing():
 
 ### Page Layouts
 **DashBordLayout**, **LandingPage**, **KanbanLayout**, **EcommerceLayout**
+[**Responsive Layouts**](layouts.md)
+
 
 ### Authentication Pages
 **AuthPages**, **ProfilePages**, **UsersManagement**, **SettingsPages**
