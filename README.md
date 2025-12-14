@@ -1,41 +1,31 @@
-# 🚀 MicroFrame v2.0 - Modular Architecture
+# 🚀 MicroFramework v2.0 - Architecture Modulaire
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![Version](https://img.shields.io/badge/version-2.0.0-green.svg)](https://github.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**MicroFramework v2.0** is a modern ASGI micro-framework with an optimized modular architecture, inspired by FastAPI.
+**MicroFramework v2.0** est un micro-framework ASGI moderne avec une architecture modulaire optimisée, inspiré de FastAPI.
 
-## ✨ What's New in v2.0
+## ✨ Nouveautés v2.0
 
-- 🎯 **Modular Architecture** - Code organized into independent modules
-- ⚡ **Optimized Performance** - Intelligent caching and fast resolution
-- 🎨 **MicroUI Library** - 50+ DaisyUI components with lazy loading (~60% faster)
-- 🔧 **Centralized Configuration** - `AppConfig` for all settings
-- 🧪 **Improved Testability** - Independent modules are easy to test
-- 📚 **Comprehensive Documentation** - Detailed guides and examples
-- 🔒 **Typed Exceptions** - `NotFoundException`, `UnauthorizedException`, etc.
-- 🏗️ **Page Layouts** - Ready-to-use dashboard, landing, kanban templates
+- 🎯 **Architecture modulaire** - Code organisé en modules indépendants
+- ⚡ **Performance optimisée** - Cache intelligent et résolution rapide
+- 🔧 **Configuration centralisée** - `AppConfig` pour toute la configuration
+- 🧪 **Testabilité améliorée** - Modules indépendants faciles à tester
+- 📚 **Documentation complète** - Guides et exemples détaillés
+- 🔒 **Exceptions typées** - `NotFoundException`, `UnauthorizedException`, etc.
 
-
-## 📦 Quick Installation
+## 📦 Installation rapide
 
 ```bash
-git clone https://github.com/traoreera/microframe.git
+git clone https://github.com/votre-username/microframework.git
 cd microframework
-pip install -e . 
-#or
-poetry init 
-poetry add git+https://github.com/traoreera/microframe.git
-#or
-python -m venv .env
-source .env/bin/activate
-pip install git+https://github.com/traoreera/microframe.git
+pip install -e .
 ```
 
-## 🚀 Quick Start
+## 🚀 Démarrage rapide
 
-### Simple Application
+### Application simple
 
 ```python
 from microframe import Application
@@ -59,19 +49,19 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
 ```
 
-### With Modular Routers
+### Avec routers modulaires
 
 ```python
 from microframe import Application, Router
 from pydantic import BaseModel
 
-# Define a model
+# Définir un modèle
 class User(BaseModel):
     name: str
     email: str
     age: int
 
-# Create a router
+# Créer un router
 users_router = Router(prefix="/users", tags=["Users"])
 
 @users_router.get("/")
@@ -87,7 +77,7 @@ app = Application(title="Modular API")
 app.include_router(users_router)
 ```
 
-### With Dependency Injection
+### Avec injection de dépendances
 
 ```python
 from microframe import Application, Depends
@@ -100,7 +90,7 @@ async def get_data(db=Depends(get_database)):
     return {"data": "...", "database": db}
 ```
 
-### With Middleware
+### Avec middlewares
 
 ```python
 from microframe import Application
@@ -127,113 +117,69 @@ app.add_middleware(
 
 ```
 microframe/
-├── core/               # Core module
-│   ├── application.py  # Main application
+├── core/               # Module central
+│   ├── application.py  # Application principale
 │   ├── config.py       # Configuration
 │   └── exceptions.py   # Exceptions
 │
-├── http/               # HTTP handling
-│   └── handlers.py     # Handlers
+├── http/               # Gestion HTTP
+│   └── handlers.py     # Gestionnaires
 │
-├── routing/            # Routing system
-│   ├── router.py       # Main router
-│   ├── models.py       # Models
-│   └── registry.py     # Registry
+├── routing/            # Système de routing
+│   ├── router.py       # Router principal
+│   ├── models.py       # Modèles
+│   └── registry.py     # Registre
 │
-├── dependencies/       # Dependency injection
-│   ├── manager.py      # Manager
+├── dependencies/       # Injection de dépendances
+│   ├── manager.py      # Gestionnaire
 │   └── models.py       # Depends
 │
 ├── validation/         # Validation
-│   └── parser.py       # Request parser
+│   └── parser.py       # Parser de requêtes
 │
 ├── middleware/         # Middlewares
 │   ├── cors.py         # CORS
 │   └── security_middleware.py  # Security
 │
 └── docs/               # Documentation
-    ├── openapi.py      # OpenAPI generator
+    ├── openapi.py      # Générateur OpenAPI
     └── ui.py           # Swagger/ReDoc UI
 ```
 
-## 🎨 MicroUI - UI Component Library
+## 🎓 Exemples
 
-MicroFrame includes **MicroUI**, a comprehensive DaisyUI component library for Python/HTMX applications.
-
-### Features
-- 🎨 **50+ DaisyUI Components** - Buttons, cards, modals, forms, and more
-- 🚀 **Lazy Loading** - ~60% faster startup with on-demand component loading
-- 📱 **Fully Responsive** - Mobile-first, responsive designs
-- 🎭 **30+ Themes** - Built-in DaisyUI theme support
-- 🔧 **HTMX Ready** - Seamless HTMX integration
-- 📦 **Zero JavaScript** - Pure Python, server-rendered
-- 🏗️ **Page Layouts** - Dashboard, landing page, kanban, e-commerce
-
-### Quick Example
-
-```python
-from microframe import Application
-from microui import Button, Card, Alert, LandingPage
-
-app = Application()
-
-@app.get("/")
-async def home():
-    return LandingPage.render(
-        title="My App",
-        hero_title="Build Amazing Apps",
-        hero_subtitle="With Python and MicroUI",
-        features=[
-            {"icon": "⚡", "title": "Fast", "desc": "Lightning fast"},
-            {"icon": "🎨", "title": "Beautiful", "desc": "Stunning UI"},
-        ]
-    )
-
-@app.get("/api")
-async def api():
-    return f"""
-    {Alert.render("Operation successful!", type="success")}
-    {Card.render(
-        title="User Profile",
-        body="User information here...",
-        actions=Button.render("Edit", variant="primary", hx_get="/edit")
-    )}
-    """
-```
-
-### Available Components
-
-**Basic**: Button, Card, Alert, Modal, Input, Table, Badge, Navbar, Loading
-
-**Advanced**: Sidebar, Drawer, Tabs, Dropdown, Avatar, Progress, Stats, Timeline, Toast, Pagination
-
-**Layouts**: Pricing, Contact forms
-
-**Pages**: DashBordLayout, LandingPage, KanbanLayout, EcommerceLayout
-
-**Auth**: AuthPages (login/register), ProfilePages, UsersManagement, SettingsPages
-
-📚 **[Full MicroUI Documentation](microui/README.md)**
-
-## 🎓 Examples
-
-Check `examples/basic_app.py` for a complete example with:
-- Modular routes with routers
-- Pydantic validation
-- Dependency injection
+Consultez `examples/basic_app.py` pour un exemple complet avec:
+- Routes modulaires avec routers
+- Validation Pydantic
+- Injection de dépendances
 - Middlewares (CORS, Security)
-- Nested routes
-
+- Routes imbriquées
 
 ## 📚 Documentation
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete architecture guide
-- **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)** - Migration from v1.0
-- **[REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md)** - Summary of changes
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Guide complet de l'architecture
+- **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)** - Migration depuis v1.0
+- **[REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md)** - Résumé des changements
 
-## 🌟 Features
+## 🔄 Migration depuis v1.0
 
-### ✅ Automatic Validation with Pydantic
+### Changements principaux
+
+```python
+# Avant (v1.0)
+from microframe.app import Application
+from microframe.routing import APIRouter
+from microframe.dependencies import AppException
+
+# Après (v2.0)
+from microframe import Application, Router, HTTPException
+```
+
+Voir [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) pour le guide complet.
+
+## 🌟 Fonctionnalités
+
+### ✅ Validation automatique avec Pydantic
 ```python
 from pydantic import BaseModel, Field
 
@@ -246,12 +192,12 @@ async def create_item(item: Item):
     return {"item": item}
 ```
 
-### ✅ Auto-generated Documentation
+### ✅ Documentation auto-générée
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 - **OpenAPI Schema**: http://localhost:8000/openapi.json
 
-### ✅ Typed Error Handling
+### ✅ Gestion d'erreurs typée
 ```python
 from microframe import (
     NotFoundException,
@@ -267,7 +213,7 @@ async def get_user(user_id: str):
     return user
 ```
 
-### ✅ Centralized Configuration
+### ✅ Configuration centralisée
 ```python
 from microframe.core import AppConfig
 
@@ -287,77 +233,70 @@ app = Application(config=config)
 ## 🧪 Tests
 
 ```bash
-# Run tests
+# Lancer les tests
 pytest tests/ -v
 
-# With coverage
+# Avec couverture
 pytest tests/ --cov=microframe --cov-report=html
 ```
 
-## 🔒 Security
+## 🔒 Sécurité
 
-- ✅ **Rate Limiting** - Protection against abuse
-- ✅ **CORS** - Flexible configuration
+- ✅ **Rate Limiting** - Protection contre les abus
+- ✅ **CORS** - Configuration flexible
 - ✅ **Security Headers** - X-Frame-Options, CSP, HSTS
-- ✅ **Payload Validation** - Size limitation
-- ✅ **Method Validation** - Allowed HTTP methods
+- ✅ **Payload Validation** - Limitation de taille
+- ✅ **Method Validation** - Méthodes HTTP autorisées
 
 ## 📊 Performance
 
-### Framework Core
-- ⚡ **Smart Cache** for dependencies
-- ⚡ **Indexed Registry** for routes (O(1))
-- ⚡ **Lazy Imports** for fast startup
-- ⚡ **Optimized Resolution** of dependencies
+- ⚡ **Cache intelligent** pour les dépendances
+- ⚡ **Registry indexé** pour les routes (O(1))
+- ⚡ **Imports lazy** pour un démarrage rapide
+- ⚡ **Résolution optimisée** des dépendances
 
-### MicroUI Optimizations (v2.0)
-- ⚡ **60% faster startup** - Lazy component loading
-- ⚡ **80+ lines reduced** - Utility helpers eliminate duplication
-- ⚡ **39% file size reduction** - Better organized code (layout.py split)
-- ⚡ **Efficient rendering** - Optimized HTML generation
-
-## 🛠️ Development
+## 🛠️ Développement
 
 ```bash
-# Install in dev mode
+# Installation en mode dev
 pip install -e ".[dev]"
 
-# Run application
+# Lancer l'application
 python examples/basic_app.py
 
-# Code formatting
+# Format du code
 black microframe/
 
-# Code verification
+# Vérification du code
 flake8 microframe/
 mypy microframe/
 ```
 
 ## 🤝 Contribution
 
-Contributions are welcome!
+Les contributions sont les bienvenues !
 
-1. Fork the project
-2. Create a branch (`git checkout -b feature/AmazingFeature`)
+1. Fork le projet
+2. Créer une branche (`git checkout -b feature/AmazingFeature`)
 3. Commit (`git commit -m 'Add AmazingFeature'`)
 4. Push (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+5. Ouvrir une Pull Request
 
-## 📝 License
+## 📝 Licence
 
-MIT License - see [LICENSE](LICENSE)
+MIT License - voir [LICENSE](LICENSE)
 
-## 🙏 Acknowledgements
+## 🙏 Remerciements
 
-- Inspired by [FastAPI](https://fastapi.tiangolo.com/)
-- Built with [Starlette](https://www.starlette.io/)
-- Validation with [Pydantic](https://pydantic-docs.helpmanual.io/)
+- Inspiré par [FastAPI](https://fastapi.tiangolo.com/)
+- Construit avec [Starlette](https://www.starlette.io/)
+- Validation avec [Pydantic](https://pydantic-docs.helpmanual.io/)
 
 ## 📞 Contact
 
-- GitHub: [@traoreera](https://github.com/traoreera)
-- Documentation: [microframe.dev](https://microframe.dev)
+- GitHub: [@votre-username](https://github.com/votre-username)
+- Documentation: [microframework.dev](https://microframework.dev)
 
 ---
 
-⭐ **Don't forget to star if this project helps you!**
+⭐ **N'oubliez pas de mettre une étoile si ce projet vous aide !**
