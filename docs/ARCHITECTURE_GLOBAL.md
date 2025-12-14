@@ -498,15 +498,7 @@ config = AppConfig(
 
 ## Extensions Futures
 
-Roadmap potentiel:
-
-- [ ] WebSocket support natif
-- [ ] GraphQL integration
-- [ ] CLI pour scaffolding
-- [ ] Plugin system
-- [ ] Admin dashboard
-- [ ] Authentication système intégré
-- [ ] ORM integration helpers
+Voir [ROADMAP.md](../ROADMAP.md) pour la roadmap complète.
 
 ---
 

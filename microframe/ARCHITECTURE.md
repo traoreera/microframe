@@ -43,25 +43,14 @@ microframe/
 │   ├── helpers.py          # Fonctions utilitaires
 │   └── cache.py            # Cache de templates
 │
-├── configurations/         # Configurations modulaires
-│   ├── base.py             # Configuration de base
-│   ├── microframe.py       # Configuration du framework
-│   ├── jwtConf.py          # Configuration JWT
-│   ├── secure.py           # Configuration de sécurité
-│   ├── middleware.py       # Configuration middleware
-│   ├── deps.py             # Configuration dépendances
-│   └── manager.py          # Gestionnaire de configurations
-│
-├── ui/                     # Interface utilisateur
+├── ui/                     # Interface utilisateur (pour le framework)
 │   ├── components.py       # Composants UI réutilisables
-│   ├── forms.py            # Gestion des formulaires
-│   ├── layouts.py          # Layouts de pages
-│   └── renderer.py         # Rendu des composants
+│   ├── cookies.py          # Gestion des cookies
+│   └── engine.py           # Moteur de rendu UI
 │
 ├── utils/                  # Utilitaires
-│   ├── helpers.py          # Fonctions utilitaires
-│   ├── validators.py       # Validateurs personnalisés
-│   └── decorators.py       # Décorateurs utilitaires
+│   ├── logger.py           # Fonctions de logging
+│   └── mdllogger.py        # Logger pour MD
 │
 ├── schemas/                # Schémas de données
 │   └── base.py             # Schémas Pydantic de base
@@ -280,3 +269,116 @@ Cette architecture modulaire rend le framework:
 - ✅ Plus performant
 
 Voir `examples/basic_app.py` pour un exemple complet.
+
+## Architecture Globale et Intégration MicroUI
+
+MicroFrame est un framework ASGI moderne composé de deux parties principales:
+- **MicroFrame Core** - Framework backend (routing, DI, middleware, validation)
+- **MicroUI** - Bibliothèque de composants UI (DaisyUI pour Python/HTMX)
+
+### Architecture en Couches
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        Browser[Browser/Client]
+    end
+    
+    subgraph "Presentation Layer - MicroUI"
+        UI[UI Components]
+        Pages[Page Layouts]
+        Themes[Theme Manager]
+    end
+    
+    subgraph "Application Layer - MicroFrame"
+        App[Application]
+        Router[Router]
+        Middleware[Middleware Stack]
+    end
+    
+    subgraph "Business Layer"
+        Routes[Route Handlers]
+        DI[Dependency Injection]
+        Validation[Validation]
+    end
+    
+    subgraph "Infrastructure Layer"
+        DB[(Database)]
+        Cache[(Cache)]
+        External[External APIs]
+    end
+    
+    Browser --> UI
+    UI --> App
+    Browser --> Router
+    Router --> Middleware
+    Middleware --> Routes
+    Routes --> DI
+    Routes --> Validation
+    Routes --> DB
+    Routes --> Cache
+    Routes --> External
+```
+
+### Flux de Requête
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant ASGI
+    participant Middleware
+    participant Router
+    participant DI
+    participant Handler
+    participant Response
+    
+    Client->>ASGI: HTTP Request
+    ASGI->>Middleware: Process (CORS, Security)
+    Middleware->>Router: Match Route
+    Router->>DI: Resolve Dependencies
+    DI->>Handler: Call with Dependencies
+    Handler->>Handler: Execute Logic
+    Handler->>Response: Create Response
+    Response->>Client: HTTP Response
+```
+
+### Interaction des Modules
+
+#### MicroFrame Core
+
+```mermaid
+graph LR
+    App[Application] --> Router[Router]
+    App --> DI[DependencyManager]
+    App --> Middleware[Middleware]
+    Router --> Registry[RouteRegistry]
+    Router --> Models[RouteInfo]
+    DI --> Depends[Depends]
+    Middleware --> CORS[CORSMiddleware]
+    Middleware --> Security[SecurityMiddleware]
+```
+
+#### MicroUI
+
+```mermaid
+graph TD
+    Init[__init__.py Lazy Loading] --> Basic[daisy_ui_kit.py]
+    Init --> Advanced[advance.py]
+    Init --> Layout[layout.py]
+    Init --> Pages[layout_pages.py]
+    Init --> Auth[pages/]
+    Init --> Utils[utils.py]
+    Init --> Themes[thems.py]
+    
+    Basic --> Utils
+    Advanced --> Utils
+    Layout --> Utils
+    Pages --> Basic
+    Pages --> Layout
+    Auth --> Basic
+```
+
+## Extensions Futures
+
+Voir [ROADMAP.md](../../ROADMAP.md) pour la roadmap complète.
+

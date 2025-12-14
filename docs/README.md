@@ -91,7 +91,7 @@ Bibliothèque complète de composants UI pour applications web :
 - **[🔄 Migration Guide](../microframe/MIGRATION_GUIDE.md)** - Migration v1 → v2
 - **[📝 Refactoring Summary](../microframe/REFACTORING_SUMMARY.md)** - Résumé des changements v2.0
 - **[✨ Features](../microframe/FEATURES.md)** - Liste complète des fonctionnalités
-- **[⚠️ Limitations](../microframe/LIMITATIONS.md)** - Limitations connues et roadmap
+- **[⚠️ Limitations](../microframe/LIMITATIONS.md)** - Limitations connues
 - **[🌍 Architecture Globale](ARCHITECTURE_GLOBAL.md)** - Vue d'ensemble système
 - **[🔧 Technical README](TECHNICAL_README.md)** - Détails techniques
 

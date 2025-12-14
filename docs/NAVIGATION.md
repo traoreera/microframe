@@ -90,7 +90,7 @@ Félicitations ! Vous avez complété le parcours.
 
 **Prochaines étapes** :
 - 📚 Documentation modules
-- 🔧 ROADMAP
+- 🔧 [ROADMAP](../ROADMAP.md)
 - 💡 Contribuer
 ```
 

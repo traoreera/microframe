@@ -571,7 +571,7 @@ Félicitations ! Vous avez complété le parcours complet de la documentation Mi
 
 **Prochaines étapes recommandées** :
 - 📚 Consulter la [documentation modules](../microframe/README.md) pour approfondir
-- 🔧 Voir la [ROADMAP](../../ROADMAP.md) pour features à venir
+- 🔧 Voir la [ROADMAP](../ROADMAP.md) pour features à venir
 - 💡 Contribuer sur [GitHub](https://github.com/traoreera/microframe)
 
 ---
