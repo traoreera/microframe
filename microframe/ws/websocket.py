@@ -1,12 +1,11 @@
 from typing import Any, Dict, List, Optional, Set
 
-from starlette.authentication import AuthenticationError
-from starlette.websockets import WebSocket, WebSocketDisconnect
-
 from authx.config import AuthConfig
 from authx.exceptions import InvalidTokenException, TokenExpiredException
 from authx.jwt import decode_token
 from authx.manager import AuthManager
+from starlette.authentication import AuthenticationError
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
 
 class BaseWebSocket:

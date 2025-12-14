@@ -6,6 +6,9 @@ authors = ["Traore Eliezer <traoreera@gmail.com>"]
 readme = "README.md"
 license = "MIT"
 
+[tool.poetry.scripts]
+microframe = "microframe.cli:main"
+
 [tool.poetry.dependencies]
 python = "^3.13"
 starlette = "^0.37.2"
