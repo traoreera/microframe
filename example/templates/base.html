@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}MicroFrame{% endblock %}</title>
+  <link rel="stylesheet" href="{{ static('style.css') }}">
+</head>
+<body>
+  <nav>
+    <a href="{{ url('home') }}">Accueil</a>
+    <a href="{{ url('users') }}">Utilisateurs</a>
+    <span>{{ now().strftime('%d/%m/%Y') }}</span>
+  </nav>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <p>MicroFrame — moteur Jinja2</p>
+  </footer>
+</body>
+</html>

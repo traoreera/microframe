@@ -1,0 +1,5 @@
+<div style="padding:12px 16px; border-radius:6px; margin:8px 0;
+  background:{% if type == 'success' %}#d4edda{% elif type == 'error' %}#f8d7da{% else %}#d1ecf1{% endif %};
+  color:{% if type == 'success' %}#155724{% elif type == 'error' %}#721c24{% else %}#0c5460{% endif %};">
+  {{ slot }}
+</div>

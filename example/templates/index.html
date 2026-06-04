@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil{% endblock %}
+
+{% block content %}
+<h1>Bonjour, {{ user }} !</h1>
+
+<p>Article publié {{ published_at|timeago }}</p>
+<p>Prix : {{ price|currency("€") }}</p>
+<p>Description : {{ description|truncate(60) }}</p>
+<p>Slug : {{ title|slugify }}</p>
+
+<h2>Données JSON</h2>
+<pre>{{ data|json_pretty }}</pre>
+
+<h2>Composants</h2>
+
+{% component "card" title="Carte simple" %}
+  <p>Contenu passé dans le slot de la carte.</p>
+{% endcomponent %}
+
+<component.alert type="success">
+  Opération réussie !
+</component.alert>
+
+<component.badge label="Nouveau" />
+
+<h2>Pagination</h2>
+{% set pages = paginate(items, page=current_page, per_page=3) %}
+<ul>
+  {% for item in pages.results %}
+    <li>{{ item }}</li>
+  {% endfor %}
+</ul>
+<p>
+  Page {{ pages.page }} / {{ pages.total_pages }}
+  {% if pages.has_prev %}<a href="{{ url('home', page=pages.prev_page) }}">← Précédent</a>{% endif %}
+  {% if pages.has_next %}<a href="{{ url('home', page=pages.next_page) }}">Suivant →</a>{% endif %}
+</p>
+
+<h2>Fil d'Ariane</h2>
+{% set crumbs = breadcrumbs("/blog/article-test") %}
+{% for crumb in crumbs %}
+  <a href="{{ crumb.url }}">{{ crumb.name }}</a>{% if not loop.last %} / {% endif %}
+{% endfor %}
+
+<h2>Formulaire CSRF</h2>
+<form method="POST" action="/submit">
+  {{ csrf_token() }}
+  <input type="text" name="message" placeholder="Message">
+  <button type="submit">Envoyer</button>
+</form>
+{% endblock %}

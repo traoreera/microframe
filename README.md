@@ -1,302 +1,213 @@
-# 🚀 MicroFramework v2.0 - Architecture Modulaire
+# MicroFrame
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-2.0.0-green.svg)](https://github.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+Moteur de rendu Jinja2 modulaire pour Python. Rendu async, composants réutilisables, cache TTL, minification HTML et support micro-frontends.
 
-**MicroFramework v2.0** est un micro-framework ASGI moderne avec une architecture modulaire optimisée, inspiré de FastAPI.
-
-## ✨ Nouveautés v2.0
-
-- 🎯 **Architecture modulaire** - Code organisé en modules indépendants
-- ⚡ **Performance optimisée** - Cache intelligent et résolution rapide
-- 🔧 **Configuration centralisée** - `AppConfig` pour toute la configuration
-- 🧪 **Testabilité améliorée** - Modules indépendants faciles à tester
-- 📚 **Documentation complète** - Guides et exemples détaillés
-- 🔒 **Exceptions typées** - `NotFoundException`, `UnauthorizedException`, etc.
-
-## 📦 Installation rapide
+## Installation
 
 ```bash
-git clone https://github.com/votre-username/microframework.git
-cd microframework
-pip install -e .
+pip install microframe
+# ou avec Poetry
+poetry add microframe
 ```
 
-## 🚀 Démarrage rapide
-
-### Application simple
+## Démarrage rapide
 
 ```python
-from microframe import Application
+from microframe import TemplateEngine
 
-app = Application(
-    title="My API",
-    version="1.0.0",
-    description="A simple API"
-)
-
-@app.get("/")
-async def index():
-    return {"message": "Hello World"}
-
-@app.get("/users/{user_id}")
-async def get_user(user_id: str):
-    return {"user_id": user_id, "name": "John"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+engine = TemplateEngine(directory="templates")
+html = await engine.render("index.html", {"title": "Accueil", "user": "Alice"})
 ```
 
-### Avec routers modulaires
-
-```python
-from microframe import Application, Router
-from pydantic import BaseModel
-
-# Définir un modèle
-class User(BaseModel):
-    name: str
-    email: str
-    age: int
-
-# Créer un router
-users_router = Router(prefix="/users", tags=["Users"])
-
-@users_router.get("/")
-async def list_users():
-    return {"users": [{"id": 1, "name": "Alice"}]}
-
-@users_router.post("/")
-async def create_user(user: User):
-    return {"message": "User created", "user": user}
-
-# Application
-app = Application(title="Modular API")
-app.include_router(users_router)
+```html
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+  <head><title>{{ title }}</title></head>
+  <body>
+    <h1>Bonjour, {{ user }} !</h1>
+  </body>
+</html>
 ```
 
-### Avec injection de dépendances
+## Configuration
 
 ```python
-from microframe import Application, Depends
-
-def get_database():
-    return {"type": "postgres", "connected": True}
-
-@app.get("/data")
-async def get_data(db=Depends(get_database)):
-    return {"data": "...", "database": db}
-```
-
-### Avec middlewares
-
-```python
-from microframe import Application
-from microframe.middleware import CORSMiddleware, SecurityMiddleware
-
-app = Application()
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_methods=["GET", "POST", "PUT", "DELETE"]
-)
-
-# Security & Rate Limiting
-app.add_middleware(
-    SecurityMiddleware,
-    rate_limit_requests=100,
-    rate_limit_window=60
+engine = TemplateEngine(
+    directory="templates",      # dossier des templates (défaut: "templates")
+    debug=True,                 # rechargement auto des templates
+    bytecode_cache=False,       # cache bytecode Jinja2 sur disque (.jinja_cache/)
+    enable_minify=True,         # minification du HTML généré
+    enable_cache=False,         # cache du rendu final en mémoire
+    cache_ttl=300,              # durée du cache en secondes
+    mfe_timeout=5.0,            # timeout HTTP pour les micro-frontends
 )
 ```
 
-## 📁 Architecture
+## Composants
+
+Les composants sont des fichiers HTML placés dans `templates/components/`. Ils sont enregistrés automatiquement au démarrage.
+
+```html
+<!-- templates/components/card.html -->
+<div class="card">
+  <h2>{{ title }}</h2>
+  <div class="content">{{ slot }}</div>
+</div>
+```
+
+**Syntaxe tag Jinja2 :**
+
+```html
+{% component "card" title="Mon titre" %}
+  <p>Contenu du slot</p>
+{% endcomponent %}
+```
+
+**Syntaxe HTML (auto-convertie) :**
+
+```html
+<component.card title="Mon titre">
+  <p>Contenu du slot</p>
+</component.card>
+
+<!-- Self-closing -->
+<component.avatar src="/img/user.png" />
+```
+
+Enregistrement manuel d'un composant :
+
+```python
+from microframe import ComponentRegistry
+
+ComponentRegistry.register("alert", "<div class='alert {{ type }}'>{{ slot }}</div>")
+```
+
+## Filtres
+
+| Filtre | Description | Exemple |
+|---|---|---|
+| `truncate` | Tronque le texte | `{{ text\|truncate(80) }}` |
+| `slugify` | Convertit en slug URL | `{{ title\|slugify }}` |
+| `currency` | Formate en monnaie | `{{ price\|currency("€") }}` |
+| `timeago` | Temps relatif | `{{ created_at\|timeago }}` |
+| `json_pretty` | JSON indenté | `{{ data\|json_pretty }}` |
+| `json` | JSON inline sûr | `{{ obj\|json }}` |
+
+Ajouter un filtre personnalisé :
+
+```python
+engine.add_filter("upper_first", lambda s: s[0].upper() + s[1:])
+```
+
+## Globals
+
+Fonctions disponibles dans tous les templates :
+
+| Global | Description |
+|---|---|
+| `static(path)` | URL d'un asset avec versionnement (`/static/app.css?v=abc`) |
+| `url(name, **params)` | Construction d'URL avec query params |
+| `csrf_token()` | Génère un champ `<input hidden>` CSRF |
+| `paginate(items, page, per_page)` | Pagination d'une liste |
+| `breadcrumbs(path)` | Fil d'Ariane depuis un chemin URL |
+| `now()` | `datetime.now()` |
+
+```html
+<link rel="stylesheet" href="{{ static('app.css') }}">
+<a href="{{ url('users', page=2) }}">Page suivante</a>
+{{ csrf_token() }}
+```
+
+Ajouter une variable/fonction globale :
+
+```python
+engine.add_global("app_name", "MonApp")
+engine.add_global("format_date", lambda d: d.strftime("%d/%m/%Y"))
+```
+
+## Cache
+
+Cache en mémoire avec TTL (activé par template ou globalement) :
+
+```python
+# Global
+engine = TemplateEngine(enable_cache=True, cache_ttl=600)
+
+# Par rendu
+html = await engine.render("page.html", ctx, use_cache=True)
+
+# Vider le cache
+engine.clear_cache()
+```
+
+Cache backend personnalisé :
+
+```python
+from microframe import CacheManager
+
+class RedisCache(CacheManager):
+    def get(self, key, ttl=None): ...
+    def set(self, key, value): ...
+
+engine = TemplateEngine(cache_backend=RedisCache())
+```
+
+## Versionnement des assets
+
+```python
+engine.set_asset_version("app.css", "v3.2.1")
+# → /static/app.css?v=v3.2.1
+```
+
+## Micro-frontends
+
+Intégration de fragments HTML servis par d'autres services :
+
+```python
+engine.mfe.register("header", "http://header-service/fragment")
+engine.mfe.register_many({
+    "footer": "http://footer-service/fragment",
+    "cart":   "http://cart-service/fragment",
+})
+```
+
+```html
+<!-- Dans un template -->
+{{ render_mfe("header") }}
+{{ render_mfe("cart", user_id=42) }}
+```
+
+## Singleton global
+
+Pour les projets qui n'ont besoin que d'une seule instance :
+
+```python
+from microframe.engine.core import TemplateEngine
+
+# Initialisation unique (ex: au démarrage de l'app)
+TemplateEngine.instance(directory="templates", debug=False)
+
+# Récupération depuis n'importe où
+engine = TemplateEngine.instance()
+html = await engine.render("index.html", ctx)
+```
+
+## Structure du projet
 
 ```
 microframe/
-├── core/               # Module central
-│   ├── application.py  # Application principale
-│   ├── config.py       # Configuration
-│   └── exceptions.py   # Exceptions
-│
-├── http/               # Gestion HTTP
-│   └── handlers.py     # Gestionnaires
-│
-├── routing/            # Système de routing
-│   ├── router.py       # Router principal
-│   ├── models.py       # Modèles
-│   └── registry.py     # Registre
-│
-├── dependencies/       # Injection de dépendances
-│   ├── manager.py      # Gestionnaire
-│   └── models.py       # Depends
-│
-├── validation/         # Validation
-│   └── parser.py       # Parser de requêtes
-│
-├── middleware/         # Middlewares
-│   ├── cors.py         # CORS
-│   └── security_middleware.py  # Security
-│
-└── docs/               # Documentation
-    ├── openapi.py      # Générateur OpenAPI
-    └── ui.py           # Swagger/ReDoc UI
+└── engine/
+    ├── cache/        # CacheBackend, CacheManager
+    ├── components/   # ComponentRegistry, extensions Jinja2
+    ├── filters/      # Filtres built-in
+    ├── globals/      # Fonctions globales built-in
+    ├── mfe/          # Client micro-frontends (HTTP async)
+    └── core/
+        ├── environment.py   # Construction de l'environnement Jinja2
+        └── renderer.py      # TemplateEngine — render, cache, minify
 ```
 
-## 🎓 Exemples
+## Licence
 
-Consultez `examples/basic_app.py` pour un exemple complet avec:
-- Routes modulaires avec routers
-- Validation Pydantic
-- Injection de dépendances
-- Middlewares (CORS, Security)
-- Routes imbriquées
-
-## 📚 Documentation
-
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Guide complet de l'architecture
-- **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)** - Migration depuis v1.0
-- **[REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md)** - Résumé des changements
-
-## 🔄 Migration depuis v1.0
-
-### Changements principaux
-
-```python
-# Avant (v1.0)
-from microframe.app import Application
-from microframe.routing import APIRouter
-from microframe.dependencies import AppException
-
-# Après (v2.0)
-from microframe import Application, Router, HTTPException
-```
-
-Voir [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) pour le guide complet.
-
-## 🌟 Fonctionnalités
-
-### ✅ Validation automatique avec Pydantic
-```python
-from pydantic import BaseModel, Field
-
-class Item(BaseModel):
-    title: str = Field(..., min_length=3)
-    price: float = Field(..., gt=0)
-
-@app.post("/items")
-async def create_item(item: Item):
-    return {"item": item}
-```
-
-### ✅ Documentation auto-générée
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **OpenAPI Schema**: http://localhost:8000/openapi.json
-
-### ✅ Gestion d'erreurs typée
-```python
-from microframe import (
-    NotFoundException,
-    UnauthorizedException,
-    ForbiddenException
-)
-
-@app.get("/users/{user_id}")
-async def get_user(user_id: str):
-    user = db.get(user_id)
-    if not user:
-        raise NotFoundException(f"User {user_id} not found")
-    return user
-```
-
-### ✅ Configuration centralisée
-```python
-from microframe.core import AppConfig
-
-config = AppConfig(
-    title="My API",
-    version="2.0.0",
-    debug=True,
-    cors_origins=["http://localhost:3000"],
-    rate_limit_requests=100,
-    rate_limit_window=60,
-    max_request_size=10_000_000
-)
-
-app = Application(config=config)
-```
-
-## 🧪 Tests
-
-```bash
-# Lancer les tests
-pytest tests/ -v
-
-# Avec couverture
-pytest tests/ --cov=microframe --cov-report=html
-```
-
-## 🔒 Sécurité
-
-- ✅ **Rate Limiting** - Protection contre les abus
-- ✅ **CORS** - Configuration flexible
-- ✅ **Security Headers** - X-Frame-Options, CSP, HSTS
-- ✅ **Payload Validation** - Limitation de taille
-- ✅ **Method Validation** - Méthodes HTTP autorisées
-
-## 📊 Performance
-
-- ⚡ **Cache intelligent** pour les dépendances
-- ⚡ **Registry indexé** pour les routes (O(1))
-- ⚡ **Imports lazy** pour un démarrage rapide
-- ⚡ **Résolution optimisée** des dépendances
-
-## 🛠️ Développement
-
-```bash
-# Installation en mode dev
-pip install -e ".[dev]"
-
-# Lancer l'application
-python examples/basic_app.py
-
-# Format du code
-black microframe/
-
-# Vérification du code
-flake8 microframe/
-mypy microframe/
-```
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues !
-
-1. Fork le projet
-2. Créer une branche (`git checkout -b feature/AmazingFeature`)
-3. Commit (`git commit -m 'Add AmazingFeature'`)
-4. Push (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
-
-## 📝 Licence
-
-MIT License - voir [LICENSE](LICENSE)
-
-## 🙏 Remerciements
-
-- Inspiré par [FastAPI](https://fastapi.tiangolo.com/)
-- Construit avec [Starlette](https://www.starlette.io/)
-- Validation avec [Pydantic](https://pydantic-docs.helpmanual.io/)
-
-## 📞 Contact
-
-- GitHub: [@votre-username](https://github.com/votre-username)
-- Documentation: [microframework.dev](https://microframework.dev)
-
----
-
-⭐ **N'oubliez pas de mettre une étoile si ce projet vous aide !**
+MIT

@@ -1,12 +1,11 @@
 from .cache import CacheBackend, CacheManager
-from .component import ComponentRegistry, auto_register_components
-from .engine import TemplateEngine
-from .helpers import get_engine, render
+from .components import ComponentRegistry, auto_register_components
+from .core import TemplateEngine
+from .mfe import MFEClient
 
 __all__ = [
     "TemplateEngine",
-    "get_engine",
-    "render",
+    "MFEClient",
     "CacheManager",
     "CacheBackend",
     "ComponentRegistry",
