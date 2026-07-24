@@ -1,4 +1,15 @@
-import asyncio
+"""Integration with xcore (https://github.com/traoreera/xcore).
+
+MicroFrame plugs into xcore as a real xcore *extension* (`BaseService`),
+declared in `xcore.yaml` under `services.extensions`. Extensions are
+initialized before xcore's plugin supervisor exists, so the `<remote>`/
+`<action>` template tags and the cache backend are wired separately, via
+`bind_engine()`, once `await xcore.boot(app)` has completed.
+
+See docs/integration-xcore.md for the full wiring example.
+"""
+
+import secrets
 from pathlib import Path
 from typing import Any, Optional
 
@@ -8,60 +19,46 @@ from ..core.renderer import TemplateEngine
 try:
     from fastapi import FastAPI
     from fastapi.staticfiles import StaticFiles
-    from xcore import Xcore
-    from xcore.services.cache import CacheService
 except ImportError:
     FastAPI = None  # type: ignore
     StaticFiles = None  # type: ignore
-    Xcore = None  # type: ignore
-    CacheService = None  # type: ignore
+
+try:
+    from xcore.services.base import BaseService, ServiceStatus
+except ImportError:
+    ServiceStatus = None  # type: ignore
+
+    class BaseService:  # type: ignore
+        name = "service"
+
+        def __init__(self) -> None:
+            self._status = None
 
 
 class XCoreCacheBackend(CacheBackend):
-    """Bridge microframe cache → xcore CacheService."""
+    """Bridge microframe cache -> xcore's async CacheService.
 
-    def __init__(self, cache_service: "CacheService"):
+    xcore's CacheService is async-only (`await cache.get(key)`, etc.). Rather
+    than faking sync behavior with `asyncio.run()` (which deadlocks once
+    called from inside the running loop that TemplateEngine.render() already
+    executes in), these methods just return the coroutine straight through.
+    TemplateEngine awaits it for you via `_maybe_await` — see renderer.py.
+    """
+
+    def __init__(self, cache_service: Any):
         self._cache = cache_service
 
-    def get(self, key: str, ttl: Optional[int] = None) -> Optional[Any]:
-        try:
-            return asyncio.run(self._cache.get(key))
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            try:
-                return loop.run_until_complete(self._cache.get(key))
-            finally:
-                loop.close()
+    def get(self, key: str, ttl: Optional[int] = None):
+        return self._cache.get(key)
 
     def set(self, key: str, value: Any):
-        try:
-            asyncio.run(self._cache.set(key, value))
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            try:
-                loop.run_until_complete(self._cache.set(key, value))
-            finally:
-                loop.close()
+        return self._cache.set(key, value)
 
     def delete(self, key: str):
-        try:
-            asyncio.run(self._cache.delete(key))
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            try:
-                loop.run_until_complete(self._cache.delete(key))
-            finally:
-                loop.close()
+        return self._cache.delete(key)
 
     def clear(self):
-        try:
-            asyncio.run(self._cache.clear())
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            try:
-                loop.run_until_complete(self._cache.clear())
-            finally:
-                loop.close()
+        return self._cache.clear()
 
 
 class XCoreStatic:
@@ -86,112 +83,124 @@ class XCoreStatic:
         return url
 
 
-_action_map: dict = {}
+class TemplateEngineExtension(BaseService):
+    """xcore extension wrapping a MicroFrame TemplateEngine.
+
+    Declare in xcore.yaml:
+
+        services:
+          extensions:
+            template_engine:
+              module: microframe.engine.integration.xcore:TemplateEngineExtension
+              config:
+                directory: templates
+                enable_ui: true
+
+    Access from a plugin:
+        engine = self.get_service("ext.template_engine").engine
+        html = await engine.render("page.html", payload)
+    """
+
+    name = "template_engine"
+
+    def __init__(self, config: Optional[dict] = None):
+        super().__init__()
+        self._config = config or {}
+        self.engine: Optional[TemplateEngine] = None
+
+    async def init(self) -> None:
+        self.engine = TemplateEngine(**self._config)
+        if ServiceStatus is not None:
+            self._status = ServiceStatus.READY
+
+    async def shutdown(self) -> None:
+        if ServiceStatus is not None:
+            self._status = ServiceStatus.STOPPED
+
+    async def health_check(self) -> tuple:
+        return (self.engine is not None, "engine ready" if self.engine else "not initialized")
+
+    def status(self) -> dict:
+        return {
+            "name": self.name,
+            "status": self._status.value if self._status is not None else "unknown",
+        }
 
 
-async def _make_remote_caller(xcore_instance: "Xcore"):
-    """Return an async function that calls xcore plugins via internal IPC."""
+def bind_engine(xcore_instance: Any, engine: TemplateEngine, static_prefix: str = "/static") -> dict:
+    """Wire an already-built TemplateEngine to a booted xcore instance.
 
-    async def _call(name: str, kwargs: dict) -> Optional[str]:
+    Must be called AFTER `await xcore.boot(app)`, since xcore's services
+    and plugin supervisor don't exist until boot() completes. Wires:
+      - cache -> xcore's CacheService, if registered
+      - <remote>/<action> tags -> xcore.plugins.call(), resolved lazily
+        at render time (so plugin hot-reloads are picked up)
+      - static() -> XCoreStatic with the given mount prefix
+
+    Returns the per-instance action-token map, needed by
+    `register_action_routes()`.
+    """
+    services = getattr(xcore_instance, "services", None)
+    if services is not None and services.has("cache"):
+        engine.set_cache_backend(XCoreCacheBackend(services.get("cache")))
+
+    async def _remote_caller(name: str, kwargs: dict) -> Optional[str]:
         try:
             plugin, action = name.split(".", 1)
         except ValueError:
             return None
         try:
             result = await xcore_instance.plugins.call(plugin, action, kwargs)
-            if isinstance(result, dict):
-                return result.get("html") or result.get("result") or str(result)
-            return str(result) if result else None
         except Exception:
             return None
+        if isinstance(result, dict):
+            return result.get("html") or result.get("result") or str(result)
+        return str(result) if result else None
 
-    return _call
+    action_map: dict = {}
 
-
-def _make_action_resolver():
-    """Return a function that generates opaque action URLs."""
-
-    import secrets
-
-    def _resolve(name: str, kwargs: dict) -> str:
-        token = secrets.token_hex(16)
+    def _action_resolver(name: str, kwargs: dict) -> str:
         try:
             plugin, action = name.split(".", 1)
         except ValueError:
             return "#"
-        _action_map[token] = (plugin, action)
+        token = secrets.token_hex(16)
+        action_map[token] = (plugin, action)
         return f"/_/a/{token}"
 
-    return _resolve, _action_map
+    engine.env.globals["_remote_caller"] = _remote_caller
+    engine.env.globals["_action_resolver"] = _action_resolver
 
-
-def create_xcore_engine(
-    xcore_instance: "Xcore",
-    directory: str = "templates",
-    enable_ui: bool = False,
-    enable_minify: bool = True,
-    enable_cache: bool = False,
-    cache_ttl: int = 300,
-    debug: bool = True,
-    static_prefix: str = "/static",
-    **kwargs,
-) -> TemplateEngine:
-    """Create a TemplateEngine wired to xcore services.
-
-    - Cache → xcore's CacheService (if available)
-    - remote/action → xcore plugin calls with opaque URLs
-    - static() → XCoreStatic with xcore-aware prefix
-    """
-    import asyncio
-
-    container = getattr(xcore_instance, "services", None)
-    cache_backend = None
-
-    if container and container.has("cache"):
-        cache_service = container.get("cache")
-        cache_backend = XCoreCacheBackend(cache_service)
-        enable_cache = True
-
-    remote_caller = asyncio.run(_make_remote_caller(xcore_instance))
-    action_resolver, _ = _make_action_resolver()
-
-    engine = TemplateEngine(
-        directory=directory,
-        debug=debug,
-        enable_minify=enable_minify,
-        enable_cache=enable_cache,
-        enable_ui=enable_ui,
-        cache_ttl=cache_ttl,
-        cache_backend=cache_backend,
-        remote_caller=remote_caller,
-        action_resolver=action_resolver,
-        **kwargs,
-    )
-
-    static_helper = XCoreStatic(
-        mount_prefix=static_prefix,
-        asset_versions=engine._asset_versions,
-    )
+    static_helper = XCoreStatic(mount_prefix=static_prefix, asset_versions=engine._asset_versions)
     engine.add_global("static", static_helper)
 
-    return engine
+    return action_map
 
 
-def register_action_routes(app: "FastAPI", prefix: str = "/_/a"):
+def register_action_routes(
+    app: "FastAPI",
+    xcore_instance: Any,
+    engine: TemplateEngine,
+    action_map: dict,
+    prefix: str = "/_/a",
+):
     """Register the opaque action handler on a FastAPI app.
 
-    Routes POST /_/a/<token> → plugin action lookup → execute.
-    Validates CSRF token and redirect or returns HTML.
+    Routes POST /_/a/<token> -> resolves the (plugin, action) pair created
+    by bind_engine()'s action resolver -> validates CSRF -> calls the
+    plugin via xcore.plugins.call() (caller=None: direct HTTP call,
+    tenant_id read from request.state.tenant_id as set by xcore's
+    TenantMiddleware) -> redirects or returns HTML.
     """
     if not FastAPI:
-        raise ImportError("fastapi is required: pip install microframe[xcore]")
+        raise ImportError("fastapi is required for register_action_routes()")
 
-    from fastapi import Form, Request
+    from fastapi import Request
     from fastapi.responses import HTMLResponse, RedirectResponse
 
     @app.post(prefix + "/{token}")
     async def handle_action(token: str, request: Request):
-        entry = _action_map.get(token)
+        entry = action_map.get(token)
         if not entry:
             return HTMLResponse("<!-- invalid action -->", status_code=404)
 
@@ -199,27 +208,16 @@ def register_action_routes(app: "FastAPI", prefix: str = "/_/a"):
         form = await request.form()
         form_data = dict(form)
 
-        # Validate CSRF
         csrf_token = form_data.pop("csrf_token", "")
         redirect = form_data.pop("redirect", "")
 
-        engine = None
-        for _, service in getattr(request.app.state, "services", {}).items():
-            if hasattr(service, "env"):
-                engine = service
-                break
+        if csrf_token != engine.csrf_token:
+            return HTMLResponse("<!-- csrf invalid -->", status_code=403)
 
-        if engine:
-            expected = engine.env.globals.get("csrf_token", lambda: "")()
-            if csrf_token != expected:
-                return HTMLResponse("<!-- csrf invalid -->", status_code=403)
-
-        from xcore import Xcore
-        xcore: Xcore = getattr(request.app, "_xcore_instance", None)
-        if xcore:
-            result = await xcore.plugins.call(plugin, action, form_data)
-            if isinstance(result, dict):
-                result = result.get("html") or result.get("result", "")
+        tenant_id = getattr(request.state, "tenant_id", "default")
+        result = await xcore_instance.plugins.call(plugin, action, form_data, tenant_id=tenant_id)
+        if isinstance(result, dict):
+            result = result.get("html") or result.get("result", "")
 
         if redirect:
             return RedirectResponse(url=redirect, status_code=303)
@@ -237,26 +235,8 @@ def mount_template_static(
     If ``template_dir/static/`` exists, it is served at ``url_prefix``.
     """
     if not StaticFiles:
-        raise ImportError("fastapi is required: pip install microframe[xcore]")
+        raise ImportError("fastapi is required for mount_template_static()")
 
     static_path = Path(template_dir) / "static"
     if static_path.is_dir():
         app.mount(url_prefix, StaticFiles(directory=str(static_path)), name=name)
-
-
-def register_engine_service(
-    xcore_instance: "Xcore",
-    engine: TemplateEngine,
-    service_name: str = "template_engine",
-):
-    """Register a TemplateEngine as an xcore service so plugins can access it.
-
-    Usage in a plugin:
-        engine = await self.get_service("template_engine")
-        html = await engine.render("page.html", ctx)
-    """
-    if not hasattr(xcore_instance, "services"):
-        return
-
-    container = xcore_instance.services
-    container.register_service(service_name, engine)

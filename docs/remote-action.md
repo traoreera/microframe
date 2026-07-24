@@ -101,23 +101,15 @@ engine = TemplateEngine(
 
 ## Intégration XCore
 
+MicroFrame s'enregistre comme une extension xcore (déclarée dans `xcore.yaml`), et le câblage des tags `<remote>`/`<action>` se fait après `await xcore.boot(app)`. Détail complet : [integration-xcore.md](integration-xcore.md).
+
 ```python
-from microframe.engine.integration.xcore import (
-    create_xcore_engine,
-    register_action_routes,
-)
+from microframe.engine.integration.xcore import bind_engine, register_action_routes
 
-from fastapi import FastAPI
-from xcore import Xcore
-
-app = FastAPI()
-xcore = Xcore(app)
-
-engine = create_xcore_engine(xcore, directory="templates")
+# xcore.setup(app) puis await xcore.boot(app) déjà effectués
+engine = xcore.services.get("ext.template_engine").engine
+action_map = bind_engine(xcore, engine)
 
 # Enregistre la route POST /_/a/{token}
-register_action_routes(app)
-
-# Enregistre le moteur comme service xcore
-register_engine_service(xcore, engine)
+register_action_routes(app, xcore, engine, action_map)
 ```

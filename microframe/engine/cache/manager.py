@@ -7,6 +7,13 @@ class CacheBackend(ABC):
     """Abstract base class for cache backends.
 
     Implement this to plug Redis, Memcached, filesystem, etc.
+
+    Methods may be sync (return the value directly, like CacheManager below)
+    or async (return a coroutine, like a backend bridging to an async cache
+    service). TemplateEngine awaits the result either way via `_maybe_await`,
+    so an async-native backend never needs to fake sync behavior with
+    `asyncio.run()` — which would deadlock when called from inside the
+    running event loop that render() already executes in.
     """
 
     @abstractmethod

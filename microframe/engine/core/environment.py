@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 import jinja2
 from markupsafe import Markup
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def build_environment(
-    directory: str,
+    directory: Union[str, Sequence[str]],
     debug: bool,
     bytecode_cache: bool,
     mfe_client: MFEClient,
@@ -31,16 +31,45 @@ def build_environment(
     remote_caller: Optional[Callable] = None,
     action_resolver: Optional[Callable] = None,
     csrf_token: str = "",
+    namespaces: Optional[Dict[str, str]] = None,
 ) -> jinja2.Environment:
-    """Create and configure a Jinja2 Environment."""
+    """Create and configure a Jinja2 Environment.
+
+    `directory` is the shared search path (single path or list) for common
+    templates like `base.html` — every namespace can `{% extends %}` from it.
+
+    `namespaces` lets several plugins each own a template directory without
+    filename collisions: `{"blog": "plugins/blog/templates", "crm": "..."}`
+    exposes each plugin's templates under `blog/index.html`, `crm/index.html`,
+    etc. (jinja2.PrefixLoader), while `directory` stays unprefixed for the
+    shared layout. Without `namespaces`, a list `directory` still works as a
+    flat search path, but same-named templates in different plugin dirs will
+    silently shadow each other — use `namespaces` once you have more than one
+    plugin contributing templates.
+    """
 
     cache_dir = Path(".jinja_cache")
     cache_dir.mkdir(exist_ok=True)
 
-    auto_register_components(f"{directory}/components")
+    directories: List[str] = [directory] if isinstance(directory, str) else list(directory)
+    for d in directories:
+        auto_register_components(f"{d}/components")
+
+    loader: jinja2.BaseLoader = jinja2.FileSystemLoader(directories)
+    if namespaces:
+        for name, ns_dir in namespaces.items():
+            auto_register_components(f"{ns_dir}/components")
+        loader = jinja2.ChoiceLoader(
+            [
+                loader,
+                jinja2.PrefixLoader(
+                    {name: jinja2.FileSystemLoader(ns_dir) for name, ns_dir in namespaces.items()}
+                ),
+            ]
+        )
 
     options: Dict[str, Any] = dict(
-        loader=jinja2.FileSystemLoader(directory),
+        loader=loader,
         auto_reload=debug,
         enable_async=True,
         trim_blocks=True,
