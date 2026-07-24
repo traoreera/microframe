@@ -1,4 +1,7 @@
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class ComponentRegistry:
@@ -7,6 +10,14 @@ class ComponentRegistry:
     Components are Jinja2 template strings (or file contents) registered
     by name. They can be used in templates via ``{% component "name" %}``
     or ``<component.name>`` syntax.
+
+    This registry is process-global and flat, keyed only by name — it is
+    NOT scoped per TemplateEngine instance or per template namespace (see
+    `namespaces` in build_environment for template-level scoping). Two
+    plugins registering a component under the same name will collide;
+    `register()` logs a warning when that happens rather than overwriting
+    silently. Prefix plugin-specific component filenames uniquely (e.g.
+    `blog_card.html`, `crm_card.html`) to avoid the collision entirely.
 
     Usage:
         ComponentRegistry.register("alert", "<div class='alert'>{{ slot }}</div>")
@@ -23,6 +34,14 @@ class ComponentRegistry:
             name: Component name (lowercase, used in templates).
             template: Jinja2 template string for the component.
         """
+        existing = cls._components.get(name)
+        if existing is not None and existing != template:
+            logger.warning(
+                "Component '%s' re-registered with different content — "
+                "the previous definition is now shadowed. Rename one of the "
+                "source files to avoid this collision.",
+                name,
+            )
         cls._components[name] = template
 
     @classmethod

@@ -92,8 +92,9 @@ class RedisCache(CacheBackend):
 
 engine = TemplateEngine(cache_backend=RedisCache())
 
-# Vider le cache
-engine.clear_cache()
+# Vider le cache (clear_cache est async : le backend peut lui-même être
+# sync ou async — TemplateEngine attend le résultat dans les deux cas)
+await engine.clear_cache()
 ```
 
 ## Assets

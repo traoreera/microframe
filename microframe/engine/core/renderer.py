@@ -6,7 +6,7 @@ import logging
 import re
 import secrets
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 import jinja2
 
@@ -22,7 +22,7 @@ class TemplateEngine:
 
     def __init__(
         self,
-        directory: str = "templates",
+        directory: Union[str, Sequence[str]] = "templates",
         debug: bool = True,
         bytecode_cache: bool = False,
         enable_minify: bool = True,
@@ -33,6 +33,7 @@ class TemplateEngine:
         mfe_timeout: float = 5.0,
         remote_caller: Optional[Callable] = None,
         action_resolver: Optional[Callable] = None,
+        namespaces: Optional[Dict[str, str]] = None,
     ):
         self.directory = directory
         self.enable_minify = enable_minify
@@ -55,6 +56,7 @@ class TemplateEngine:
             remote_caller=remote_caller,
             action_resolver=action_resolver,
             csrf_token=self._csrf_token,
+            namespaces=namespaces,
         )
 
     # ------------------------------------------------------------------
@@ -86,7 +88,7 @@ class TemplateEngine:
 
         if cached_enabled:
             key = self._cache_key(template_name, ctx)
-            hit = self._cache.get(key, self.cache_ttl)
+            hit = await self._maybe_await(self._cache.get(key, self.cache_ttl))
             if hit:
                 logger.debug(f"Cache hit: {template_name}")
                 return hit
@@ -98,7 +100,7 @@ class TemplateEngine:
             html = self._minify(html)
 
             if cached_enabled:
-                self._cache.set(key, html)
+                await self._maybe_await(self._cache.set(key, html))
 
             logger.debug(f"Rendered {template_name} in {(time.time() - start) * 1000:.2f}ms")
             return html
@@ -126,16 +128,32 @@ class TemplateEngine:
     def set_asset_version(self, path: str, version: str):
         self._asset_versions[path] = version
 
+    def set_cache_backend(self, backend: CacheBackend, enable: bool = True):
+        self._cache = backend
+        self.enable_cache = enable
+
+    @property
+    def csrf_token(self) -> str:
+        return self._csrf_token
+
     def list_templates(self):
         return self.env.list_templates()
 
-    def clear_cache(self):
-        self._cache.clear()
+    async def clear_cache(self):
+        await self._maybe_await(self._cache.clear())
         logger.info("Template cache cleared")
 
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
+
+    @staticmethod
+    async def _maybe_await(value: Any) -> Any:
+        """Await `value` if the cache backend is async (e.g. XCoreCacheBackend),
+        otherwise pass sync results straight through (built-in CacheManager)."""
+        if inspect.isawaitable(value):
+            return await value
+        return value
 
     def _cache_key(self, template_name: str, ctx: dict) -> str:
         raw = json.dumps(ctx, sort_keys=True, default=str)

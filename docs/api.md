@@ -87,9 +87,9 @@ engine.set_asset_version("app.css", "v2")
 
 Liste tous les templates disponibles.
 
-#### `clear_cache()`
+#### `async clear_cache()`
 
-Vide le cache de rendu.
+Vide le cache de rendu (await requis — le backend peut être async, ex. `XCoreCacheBackend`).
 
 ---
 
