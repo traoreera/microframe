@@ -48,6 +48,7 @@ class ComponentExtension(Extension):
             return await tpl.render_async(**props)
         except Exception as e:
             import traceback
+
             traceback.print_exc()
             return f"<!-- Error rendering component '{name}': {e} -->"
 
@@ -61,17 +62,25 @@ class ComponentExtensions(Extension):
     def _convert(self, source: str) -> str:
         def parse_props(props_str: str) -> str:
             props = []
-            for match in re.findall(r'(\w+)=(?:"([^"]*)"|\'([^\']*)\'|(\d+\.?\d*)|(\w+))', props_str):
+            for match in re.findall(
+                r'(\w+)=(?:"([^"]*)"|\'([^\']*)\'|(\d+\.?\d*)|(\w+))', props_str
+            ):
                 key = match[0]
                 if match[1]:
-                    props.append(f'{key}="{match[1]}"' if "{{" not in match[1] else f"{key}={match[1]}")
+                    props.append(
+                        f'{key}="{match[1]}"' if "{{" not in match[1] else f"{key}={match[1]}"
+                    )
                 elif match[2]:
-                    props.append(f'{key}="{match[2]}"' if "{{" not in match[2] else f"{key}={match[2]}")
+                    props.append(
+                        f'{key}="{match[2]}"' if "{{" not in match[2] else f"{key}={match[2]}"
+                    )
                 elif match[3]:
                     props.append(f"{key}={match[3]}")
                 elif match[4]:
                     lower = match[4].lower()
-                    props.append(f"{key}={lower if lower in ('true','false','none','null') else match[4]}")
+                    props.append(
+                        f"{key}={lower if lower in ('true','false','none','null') else match[4]}"
+                    )
             return (" " + " ".join(props)) if props else ""
 
         # Self-closing

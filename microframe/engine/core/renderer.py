@@ -1,13 +1,16 @@
+import asyncio
 import hashlib
+import inspect
 import json
 import logging
 import re
+import secrets
 import time
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import jinja2
 
-from ..cache import CacheManager
+from ..cache import CacheBackend, CacheManager
 from ..mfe import MFEClient
 from .environment import build_environment
 
@@ -24,9 +27,12 @@ class TemplateEngine:
         bytecode_cache: bool = False,
         enable_minify: bool = True,
         enable_cache: bool = False,
+        enable_ui: bool = False,
         cache_ttl: int = 300,
-        cache_backend: Optional[CacheManager] = None,
+        cache_backend: Optional[CacheBackend] = None,
         mfe_timeout: float = 5.0,
+        remote_caller: Optional[Callable] = None,
+        action_resolver: Optional[Callable] = None,
     ):
         self.directory = directory
         self.enable_minify = enable_minify
@@ -34,7 +40,10 @@ class TemplateEngine:
         self.cache_ttl = cache_ttl
         self._cache = cache_backend or CacheManager()
         self._asset_versions: Dict[str, str] = {}
+        self._csrf_token = secrets.token_urlsafe(32)
         self.mfe = MFEClient(timeout=mfe_timeout)
+
+        self._context_processors: List[Callable] = []
 
         self.env = build_environment(
             directory=directory,
@@ -42,6 +51,10 @@ class TemplateEngine:
             bytecode_cache=bytecode_cache,
             mfe_client=self.mfe,
             asset_versions=self._asset_versions,
+            enable_ui=enable_ui,
+            remote_caller=remote_caller,
+            action_resolver=action_resolver,
+            csrf_token=self._csrf_token,
         )
 
     # ------------------------------------------------------------------
@@ -55,7 +68,20 @@ class TemplateEngine:
         use_cache: Optional[bool] = None,
     ) -> str:
         """Render a template and return the HTML string."""
-        ctx = ctx or {}
+        ctx = dict(ctx or {})
+
+        for processor in self._context_processors:
+            sig = inspect.signature(processor)
+            params = list(sig.parameters.values())
+            if len(params) == 1:
+                result = processor(ctx)
+            else:
+                result = processor()
+            if asyncio.iscoroutine(result):
+                result = await result
+            if isinstance(result, dict):
+                ctx.update(result)
+
         cached_enabled = self.enable_cache if use_cache is None else use_cache
 
         if cached_enabled:
@@ -87,6 +113,9 @@ class TemplateEngine:
     # ------------------------------------------------------------------
     # Customization
     # ------------------------------------------------------------------
+
+    def add_context_processor(self, func: Callable):
+        self._context_processors.append(func)
 
     def add_global(self, name: str, value: Any):
         self.env.globals[name] = value

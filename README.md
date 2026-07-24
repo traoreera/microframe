@@ -1,6 +1,8 @@
 # MicroFrame
 
-Moteur de rendu Jinja2 modulaire pour Python. Rendu async, composants réutilisables, cache TTL, minification HTML et support micro-frontends.
+Moteur de rendu Jinja2 modulaire pour Python. Rendu async, composants reutilisables, cache TTL, minification HTML et support micro-frontends.
+
+Guide d usage rapide: docs/guide.md couvre le flux complet, puis docs/components.md, docs/remote-action.md et docs/micro-frontends.md detailent les usages avances.
 
 ## Installation
 
