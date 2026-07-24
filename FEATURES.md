@@ -1,606 +1,298 @@
-# MicroFrame v2.0 - Liste Complète des Fonctionnalités
+# MicroFrame — Vision & Features à implémenter
 
-> Framework ASGI moderne et complet pour Python 3.13+
-
-## 🚀 Vue d'ensemble
-
-MicroFrame v2.0 est un framework web ASGI complet offrant une architecture modulaire avec routing avancé, injection de dépendances, validation automatique, moteur de templates, composants UI, et bien plus.
+Ce document décrit les fonctionnalités prévues pour les prochaines versions du moteur.
+Chaque section indique l'état actuel et ce qui reste à construire.
 
 ---
 
-## 📋 Table des matières
+## État actuel (v2.0)
 
-- [Core Framework](#-core-framework)
-- [Routing](#-routing)
-- [Injection de Dépendances](#-injection-de-dépendances)
-- [Validation](#-validation)
-- [Middleware et Sécurité](#-middleware-et-sécurité)
-- [Documentation Automatique](#-documentation-automatique)
-- [Moteur de Templates](#-moteur-de-templates)
-- [Composants UI](#-composants-ui)
-- [Configuration](#-configuration)
-- [Utilitaires](#-utilitaires)
-- [Testing](#-testing)
+| Feature | Statut |
+|---|---|
+| Rendu Jinja2 async | ✅ |
+| Composants (`{% component %}` + `<component.X>`) | ✅ |
+| Cache mémoire avec TTL | ✅ |
+| Filtres built-in | ✅ |
+| Globals built-in (paginate, breadcrumbs, csrf) | ✅ |
+| Minification HTML | ✅ |
+| Versionnement des assets | ✅ |
+| Micro-frontends async (MFEClient) | ✅ |
 
 ---
 
-## 🎯 Core Framework
+## Cache (v2.1)
 
-### Application ASGI
-- ✅ **Compatible ASGI 3.0** - Basé sur Starlette pour performance maximale
-- ✅ **Configuration centralisée** - Gestion de configuration via `AppConfig`
-- ✅ **Hot reload** - Rechargement automatique en mode développement
-- ✅ **Lazy loading** - Import des modules à la demande
-- ✅ **Gestion d'événements** - Hooks de startup/shutdown
-- ✅ **Mode debug** - Traces détaillées et messages d'erreur explicites
-
-### Gestion des Exceptions
-- ✅ **Exceptions typées** - `HTTPException`, `ValidationException`, `NotFoundException`, etc.
-- ✅ **Handlers personnalisables** - Créez vos propres gestionnaires d'erreurs
-- ✅ **Réponses JSON structurées** - Format cohérent pour toutes les erreurs
-- ✅ **Status codes HTTP** - Support complet des codes HTTP standard
+### Backends pluggables
+Actuellement seul `CacheManager` (in-memory) est disponible.
+Il faut implémenter des backends alternatifs via l'interface `CacheBackend`.
 
 ```python
-from microframe import Application, NotFoundException
+# Usage visé
+from microframe.engine.cache import RedisCache
 
-app = Application(title="Mon API", version="1.0.0")
-
-@app.get("/users/{user_id}")
-async def get_user(user_id: int):
-    if not user_exists(user_id):
-        raise NotFoundException(f"User {user_id} not found")
-    return {"user_id": user_id}
-```
-
----
-
-## 🛣️ Routing
-
-### Routes HTTP
-- ✅ **Méthodes HTTP** - GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD
-- ✅ **Décorateurs intuitifs** - `@app.get()`, `@app.post()`, etc.
-- ✅ **Route parameters** - Paramètres de chemin dynamiques
-- ✅ **Query parameters** - Paramètres de requête automatiques
-- ✅ **Request body** - Parsing automatique JSON/Form
-- ✅ **File uploads** - Support des fichiers multipart/form-data
-
-### Router Modulaire
-- ✅ **Routers imbriqués** - Organisation hiérarchique des routes
-- ✅ **Préfixes de routes** - Groupement logique avec préfixes
-- ✅ **Tags** - Catégorisation des routes pour documentation
-- ✅ **Middleware par router** - Middleware spécifique à un groupe
-- ✅ **Inclusion de routers** - Composition de routers multiples
-
-### Registry des Routes
-- ✅ **Indexation O(1)** - Accès ultra-rapide aux routes
-- ✅ **Recherche par tag** - Filtrage des routes par catégorie
-- ✅ **Inspection des routes** - Listage de toutes les routes enregistrées
-- ✅ **Métadonnées** - Informations complètes sur chaque route
-
-```python
-from microframe import Application, Router
-
-app = Application()
-
-# Router modulaire
-users_router = Router(prefix="/users", tags=["Users"])
-items_router = Router(prefix="/items", tags=["Items"])
-
-@users_router.get("/")
-async def list_users():
-    return {"users": []}
-
-@items_router.post("/")
-async def create_item(name: str):
-    return {"name": name}
-
-# Inclusion dans l'app
-api = Router(prefix="/api/v1")
-api.include_router(users_router)
-api.include_router(items_router)
-app.include_router(api)
-```
-
----
-
-## 💉 Injection de Dépendances
-
-### Système de Dépendances
-- ✅ **Injection automatique** - Résolution automatique des dépendances
-- ✅ **Cache intelligent** - Mise en cache des dépendances par requête
-- ✅ **Dépendances imbriquées** - Support des dépendances de dépendances
-- ✅ **Générateurs async** - Support de `async with` et cleanup
-- ✅ **Type hints** - Détection automatique via annotations
-
-### Scopes de Dépendances
-- ✅ **Request scope** - Une instance par requête
-- ✅ **Singleton scope** - Une instance globale
-- ✅ **Factory scope** - Nouvelle instance à chaque injection
-
-### Gestion des Erreurs
-- ✅ **Exception handling** - Gestion automatique des erreurs de dépendances
-- ✅ **Rollback automatique** - Cleanup en cas d'erreur
-- ✅ **Traces détaillées** - Debugging facilité
-
-```python
-from microframe import Application, Depends
-
-class Database:
-    def __init__(self):
-        self.connection = "connected"
-    
-    def query(self, sql: str):
-        return f"Executing: {sql}"
-
-def get_db():
-    db = Database()
-    return db
-
-@app.get("/users")
-async def list_users(db=Depends(get_db)):
-    return db.query("SELECT * FROM users")
-```
-
----
-
-## ✅ Validation
-
-### Validation Pydantic
-- ✅ **Modèles Pydantic** - Validation automatique des données
-- ✅ **Type checking** - Vérification des types à l'exécution
-- ✅ **Validation personnalisée** - Validators custom
-- ✅ **Messages d'erreur clairs** - Erreurs détaillées et lisibles
-- ✅ **Coercition de types** - Conversion automatique des types
-
-### Parsing de Requêtes
-- ✅ **JSON body** - Parsing et validation automatique
-- ✅ **Form data** - Support des formulaires HTML
-- ✅ **Query parameters** - Validation des paramètres d'URL
-- ✅ **Path parameters** - Validation des segments de chemin
-- ✅ **Headers** - Validation des en-têtes HTTP
-- ✅ **Cookies** - Lecture et validation des cookies
-
-```python
-from pydantic import BaseModel, EmailStr
-from microframe import Application
-
-class User(BaseModel):
-    name: str
-    email: EmailStr
-    age: int
-
-@app.post("/users")
-async def create_user(user: User):
-    # user est automatiquement validé
-    return {"created": user.dict()}
-```
-
----
-
-## 🔒 Middleware et Sécurité
-
-### Middlewares Intégrés
-- ✅ **CORS Middleware** - Configuration CORS complète
-- ✅ **Security Middleware** - Headers de sécurité HTTP
-- ✅ **Rate Limiting** - Limitation du taux de requêtes
-- ✅ **Compression** - Gzip/Brotli automatique
-- ✅ **Trusted Hosts** - Validation des hôtes autorisés
-
-### CORS (Cross-Origin Resource Sharing)
-- ✅ **Origins autorisées** - Liste blanche de domaines
-- ✅ **Méthodes HTTP** - Filtrage des méthodes autorisées
-- ✅ **Headers personnalisés** - Configuration des headers CORS
-- ✅ **Credentials** - Support des cookies cross-origin
-- ✅ **Preflight requests** - Gestion des requêtes OPTIONS
-
-### Sécurité
-- ✅ **Security headers** - HSTS, X-Frame-Options, CSP, etc.
-- ✅ **Rate limiting** - Protection contre les abus
-- ✅ **Request validation** - Validation des requêtes entrantes
-- ✅ **XSS protection** - Protection contre les attaques XSS
-- ✅ **CSRF tokens** - Protection CSRF pour formulaires
-
-```python
-from microframe import Application
-from microframe.middleware import CORSMiddleware, SecurityMiddleware
-
-app = Application()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-    allow_credentials=True
-)
-
-app.add_middleware(
-    SecurityMiddleware,
-    rate_limit_requests=100,
-    rate_limit_window=60
+engine = TemplateEngine(
+    cache_backend=RedisCache(url="redis://localhost:6379", prefix="mf:")
 )
 ```
 
----
-
-## 📚 Documentation Automatique
-
-### OpenAPI 3.0
-- ✅ **Génération automatique** - Schéma OpenAPI complet
-- ✅ **Descriptions** - Documentation inline des routes
-- ✅ **Exemples** - Exemples de requêtes/réponses
-- ✅ **Tags et catégories** - Organisation de la documentation
-- ✅ **Schémas Pydantic** - Conversion automatique en JSON Schema
-
-### Interfaces Interactives
-- ✅ **Swagger UI** - Interface interactive pour tester l'API
-- ✅ **ReDoc** - Documentation élégante et responsive
-- ✅ **Personnalisable** - Customisation des thèmes et styles
-- ✅ **URLs configurables** - Chemins personnalisables
-
-### Métadonnées
-- ✅ **Titre et version** - Informations sur l'API
-- ✅ **Description** - Documentation générale
-- ✅ **License** - Informations de licence
-- ✅ **Contact** - Coordonnées du mainteneur
-- ✅ **Servers** - URLs des serveurs (dev, staging, prod)
+**À implémenter :**
+- `RedisCache` — backend Redis via `aioredis`
+- `FilesystemCache` — cache HTML sur disque (utile pour le SSG)
+- `MemcachedCache` — backend Memcached
+- Invalidation par tag : `cache.invalidate_tag("blog")` pour invalider tous les templates tagués `blog`
 
 ```python
-from microframe import Application, AppConfig
+html = await engine.render("post.html", ctx, cache_tags=["blog", "post-42"])
+engine.cache.invalidate_tag("blog")  # invalide tous les templates avec ce tag
+```
 
-app = Application(
-    configuration=AppConfig(
-        title="Ma Super API",
-        version="1.0.0",
-        description="Documentation complète de mon API",
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json"
-    )
+---
+
+## Context processors (v2.1)
+
+Fonctions appelées automatiquement avant chaque rendu pour injecter des variables globales dans le contexte.
+
+```python
+# Usage visé
+def inject_settings(ctx: dict) -> dict:
+    ctx["DEBUG"] = True
+    ctx["SITE_NAME"] = "MonSite"
+    return ctx
+
+engine.add_context_processor(inject_settings)
+```
+
+Les context processors async doivent aussi être supportés :
+
+```python
+async def inject_user(ctx: dict) -> dict:
+    ctx["current_user"] = await fetch_user(ctx.get("user_id"))
+    return ctx
+```
+
+**À implémenter :**
+- `TemplateEngine.add_context_processor(func)` 
+- Appel automatique des processors avant `template.render_async()`
+- Support sync et async
+
+---
+
+## Internationalisation / i18n (v2.2)
+
+Traduction des chaînes dans les templates via un système de catalogues.
+
+```html
+<!-- Dans un template -->
+<h1>{{ _("Bonjour") }}</h1>
+<p>{{ ngettext("%(num)d article", "%(num)d articles", count) }}</p>
+```
+
+```python
+# Configuration
+engine = TemplateEngine(
+    directory="templates",
+    locale="fr_FR",
+    translations_dir="locales",
 )
 ```
 
+**À implémenter :**
+- Intégration `Babel` pour la gestion des catalogues `.po` / `.mo`
+- Global `_()` et `ngettext()` dans l'environnement Jinja2
+- Changement de locale dynamique par rendu : `await engine.render("page.html", ctx, locale="en_US")`
+- Extension Jinja2 `{% trans %}...{% endtrans %}`
+
 ---
 
-## 🎨 Moteur de Templates
+## Rechargement à chaud / Watcher (v2.2)
 
-### Jinja2 Intégré
-- ✅ **Templates Jinja2** - Moteur de templates puissant et flexible
-- ✅ **Héritage de templates** - Layouts et blocks
-- ✅ **Includes** - Réutilisation de fragments
-- ✅ **Macros** - Fonctions réutilisables dans les templates
-- ✅ **Filtres personnalisés** - Extensions du système de filtres
-- ✅ **Variables globales** - Contexte partagé entre templates
-
-### Cache de Templates
-- ✅ **Compilation automatique** - Templates pré-compilés
-- ✅ **Cache en mémoire** - Performance optimale
-- ✅ **Hot reload** - Rechargement automatique en dev
-- ✅ **Invalidation** - Gestion intelligente du cache
-
-### Système de Composants
-- ✅ **Composants réutilisables** - Système de composants UI
-- ✅ **Props et slots** - Passage de données aux composants
-- ✅ **Composition** - Composition de composants
-- ✅ **Rendu côté serveur** - SSR pour performance maximale
+En mode `debug=True`, surveiller les fichiers templates et recharger automatiquement les composants enregistrés sans redémarrer.
 
 ```python
-from microframe import Application
-from microframe.engine import TemplateEngine
-
-app = Application()
-engine = TemplateEngine(templates_dir="templates")
-
-@app.get("/")
-async def index(request):
-    return engine.render("index.html", {
-        "title": "Accueil",
-        "user": {"name": "John Doe"},
-        "items": [1, 2, 3]
-    })
+engine = TemplateEngine(directory="templates", debug=True, watch=True)
+# → les composants dans templates/components/ se rechargent dès qu'un .html est modifié
 ```
 
+**À implémenter :**
+- `Watcher` dans `engine/watcher.py` basé sur `watchdog`
+- Écoute des modifications dans `templates/components/`
+- Rappel de `auto_register_components()` sur chaque changement
+- Invalidation du cache bytecode Jinja2 sur modification d'un template
+
 ---
 
-## 🧩 Composants UI
+## Streaming (v2.3)
 
-### Bibliothèque de Composants
-- ✅ **Cards** - Cartes d'information stylisées
-- ✅ **Buttons** - Boutons avec différents styles
-- ✅ **Forms** - Formulaires avec validation
-- ✅ **Tables** - Tableaux de données
-- ✅ **Modals** - Fenêtres modales
-- ✅ **Alerts** - Messages d'alerte et notifications
-- ✅ **Navigation** - Barres de navigation et menus
-
-### Layouts
-- ✅ **Grid system** - Système de grille responsive
-- ✅ **Flex layouts** - Layouts flexbox
-- ✅ **Containers** - Conteneurs et wrappers
-- ✅ **Sections** - Sections de page
-- ✅ **Headers/Footers** - En-têtes et pieds de page
-
-### Formulaires
-- ✅ **Input fields** - Champs de saisie variés
-- ✅ **Validation côté client** - Validation HTML5
-- ✅ **Validation côté serveur** - Intégration Pydantic
-- ✅ **Messages d'erreur** - Affichage des erreurs de validation
-- ✅ **File uploads** - Upload de fichiers avec prévisualisation
+Rendu progressif du template : envoyer les premiers octets au client avant que le rendu soit terminé. Utile pour les grandes pages.
 
 ```python
-from microframe.ui.components import Card, Button, Form
-from microframe.ui.layouts import Container, Grid
+# Usage visé
+async for chunk in engine.stream("page.html", ctx):
+    await response.write(chunk)
+```
 
-# Création d'une card
-card = Card(
-    title="Dashboard",
-    content="Bienvenue sur votre tableau de bord",
-    actions=[
-        Button("Voir plus", variant="primary"),
-        Button("Annuler", variant="secondary")
-    ]
+**À implémenter :**
+- `TemplateEngine.stream(template_name, ctx)` → `AsyncIterator[str]`
+- Basé sur `jinja2.Environment.generate_async()`
+- Option `chunk_size` pour contrôler la granularité
+
+---
+
+## Composants avancés (v2.3)
+
+### Composants Python (class-based)
+
+```python
+from microframe.engine.components import Component
+
+class Card(Component):
+    template = "components/card.html"
+
+    def get_context(self):
+        return {
+            "title": self.props.get("title", ""),
+            "slot": self.children,
+        }
+
+ComponentRegistry.register("card", Card)
+```
+
+### Composants avec validation des props
+
+```python
+class Button(Component):
+    template = "components/button.html"
+    props_schema = {
+        "label": str,
+        "variant": ("primary", "secondary", "danger"),
+        "disabled": bool,
+    }
+```
+
+**À implémenter :**
+- Classe de base `Component` dans `engine/components/base.py`
+- Méthode `get_context()` overridable
+- Validation des props avec levée d'erreur claire en mode debug
+
+---
+
+## Filtres supplémentaires (v2.3)
+
+Filtres à ajouter dans `engine/filters/builtin.py` :
+
+| Filtre | Description |
+|---|---|
+| `markdown` | Convertit du Markdown en HTML (via `mistune`) |
+| `humanize` | Nombres lisibles : `1200` → `1 200`, `1500000` → `1.5M` |
+| `highlight` | Coloration syntaxique de code (via `Pygments`) |
+| `gravatar` | URL Gravatar depuis un email |
+| `nl2br` | Convertit les sauts de ligne en `<br>` |
+| `pluralize` | `{{ count }} article{{ count|pluralize }}` |
+
+---
+
+## Pages d'erreur (v2.3)
+
+Rendu automatique de templates dédiés quand un template est introuvable ou plante.
+
+```
+templates/
+└── errors/
+    ├── 404.html   ← template non trouvé
+    └── 500.html   ← erreur de rendu
+```
+
+```python
+engine = TemplateEngine(
+    directory="templates",
+    error_templates={"404": "errors/404.html", "500": "errors/500.html"},
 )
-
-# Layout avec grille
-layout = Container([
-    Grid(columns=3, items=[card, card, card])
-])
 ```
 
----
-
-## ⚙️ Configuration
-
-### Configuration Modulaire
-- ✅ **Configuration par environnement** - Dev, staging, production
-- ✅ **Variables d'environnement** - Support des .env
-- ✅ **Validation automatique** - Schémas Pydantic pour config
-- ✅ **Hot reload** - Rechargement sans redémarrage
-- ✅ **Configuration hiérarchique** - Override de configurations
-
-### Modules de Configuration
-- ✅ **Base configuration** - Configuration de base du framework
-- ✅ **JWT configuration** - Paramètres d'authentification JWT
-- ✅ **Security configuration** - Paramètres de sécurité
-- ✅ **Middleware configuration** - Config des middlewares
-- ✅ **Database configuration** - Paramètres de base de données
-
-### Configuration Manager
-- ✅ **Chargement depuis fichiers** - JSON, YAML, TOML
-- ✅ **Chargement depuis env** - Variables d'environnement
-- ✅ **Get/Set dynamique** - Accès programmatique
-- ✅ **Validation** - Vérification automatique des valeurs
-- ✅ **Secrets management** - Gestion sécurisée des secrets
-
-```python
-from microframe.configurations import ConfigManager
-from microframe.configurations.base import BaseConfig
-
-class DatabaseConfig(BaseConfig):
-    host: str = "localhost"
-    port: int = 5432
-    database: str = "mydb"
-    username: str
-    password: str
-
-config = ConfigManager()
-config.register("database", DatabaseConfig())
-config.load_from_file("config.json")
-
-db_config = config.get("database")
-print(f"Connecting to {db_config.host}:{db_config.port}")
-```
+**À implémenter :**
+- Détection `TemplateNotFound` → rendu de `errors/404.html`
+- Détection `Exception` → rendu de `errors/500.html` avec contexte d'erreur en mode debug
+- Fallback sur le message HTML inline si le template d'erreur est lui-même introuvable
 
 ---
 
-## 🛠️ Utilitaires
+## CLI (v2.4)
 
-### Helpers
-- ✅ **String utils** - Manipulation de chaînes
-- ✅ **Date utils** - Gestion des dates et timestamps
-- ✅ **File utils** - Manipulation de fichiers
-- ✅ **URL utils** - Parsing et construction d'URLs
-- ✅ **JSON utils** - Sérialisation/désérialisation avancée
-
-### Validateurs Personnalisés
-- ✅ **Email validation** - Validation d'emails
-- ✅ **URL validation** - Validation d'URLs
-- ✅ **Phone validation** - Validation de numéros de téléphone
-- ✅ **Password strength** - Vérification de force de mot de passe
-- ✅ **Custom validators** - Créez vos propres validateurs
-
-### Décorateurs Utilitaires
-- ✅ **@cached** - Cache de fonction avec TTL
-- ✅ **@retry** - Retry automatique en cas d'erreur
-- ✅ **@timeout** - Timeout pour fonctions async
-- ✅ **@rate_limit** - Limitation de taux par fonction
-- ✅ **@log_execution** - Logging automatique
-
-```python
-from microframe.utils.decorators import cached, retry
-from microframe.utils.validators import validate_email, validate_url
-
-@cached(ttl=300)  # Cache pendant 5 minutes
-@retry(max_attempts=3, delay=1)
-async def fetch_user_data(user_id: int):
-    # Votre logique avec cache et retry automatique
-    return {"user_id": user_id, "name": "John"}
-
-# Validation
-email = "user@example.com"
-if validate_email(email):
-    print("Email valide!")
-```
-
----
-
-## 🧪 Testing
-
-### Suite de Tests Complète
-- ✅ **Tests unitaires** - Tests de tous les modules
-- ✅ **Tests d'intégration** - Tests end-to-end
-- ✅ **Tests de validation** - Validation des schémas
-- ✅ **Tests de middleware** - Tests des middlewares
-- ✅ **Tests de templates** - Tests du moteur de templates
-- ✅ **Tests UI** - Tests des composants UI
-
-### Fixtures et Helpers
-- ✅ **Fixtures pytest** - Fixtures réutilisables
-- ✅ **Test client** - Client HTTP pour tests
-- ✅ **Mock objects** - Mocking facilité
-- ✅ **Factory pattern** - Factories pour données de test
-- ✅ **Assertions personnalisées** - Helpers d'assertion
-
-### Coverage
-- ✅ **Code coverage** - Mesure de la couverture
-- ✅ **Rapports HTML** - Rapports de couverture détaillés
-- ✅ **100+ tests** - Suite de tests exhaustive
-
-```python
-import pytest
-from httpx import AsyncClient
-from microframe import Application
-
-@pytest.fixture
-async def client():
-    app = Application()
-    
-    @app.get("/test")
-    async def test_route():
-        return {"message": "ok"}
-    
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        yield ac
-
-async def test_route(client):
-    response = await client.get("/test")
-    assert response.status_code == 200
-    assert response.json() == {"message": "ok"}
-```
-
----
-
-## 📊 Récapitulatif des Fonctionnalités
-
-### Framework Core
-| Fonctionnalité | Status | Description |
-|----------------|--------|-------------|
-| ASGI 3.0 | ✅ | Supporté via Starlette |
-| Async/Await | ✅ | Support complet async |
-| Type Hints | ✅ | Typing moderne Python 3.13+ |
-| Hot Reload | ✅ | Rechargement automatique en dev |
-| Configuration | ✅ | Configuration centralisée |
-
-### Routing & HTTP
-| Fonctionnalité | Status | Description |
-|----------------|--------|-------------|
-| HTTP Methods | ✅ | GET, POST, PUT, DELETE, PATCH, etc. |
-| Route Parameters | ✅ | Paramètres dynamiques |
-| Query Parameters | ✅ | Parsing automatique |
-| Request Body | ✅ | JSON, Form, Multipart |
-| Routers Modulaires | ✅ | Organisation hiérarchique |
-
-### Validation & Sécurité
-| Fonctionnalité | Status | Description |
-|----------------|--------|-------------|
-| Pydantic Models | ✅ | Validation automatique |
-| CORS | ✅ | Configuration CORS complète |
-| Rate Limiting | ✅ | Protection contre abus |
-| Security Headers | ✅ | Headers de sécurité HTTP |
-| Authentication | ✅ | JWT, sessions, custom |
-
-### Documentation
-| Fonctionnalité | Status | Description |
-|----------------|--------|-------------|
-| OpenAPI 3.0 | ✅ | Schéma auto-généré |
-| Swagger UI | ✅ | Interface interactive |
-| ReDoc | ✅ | Documentation élégante |
-| Type Annotations | ✅ | Documentation inline |
-
-### Templates & UI
-| Fonctionnalité | Status | Description |
-|----------------|--------|-------------|
-| Jinja2 | ✅ | Moteur de templates |
-| Components | ✅ | Composants réutilisables |
-| Layouts | ✅ | Système de layouts |
-| Forms | ✅ | Formulaires avec validation |
-| Cache | ✅ | Cache de templates |
-
-### Avancé
-| Fonctionnalité | Status | Description |
-|----------------|--------|-------------|
-| Dependency Injection | ✅ | Injection automatique |
-| Configuration Manager | ✅ | Gestion centralisée |
-| Middleware Custom | ✅ | Middlewares personnalisés |
-| Testing Suite | ✅ | 100+ tests complets |
-| Performance | ✅ | Cache, lazy loading |
-
----
-
-## 🚀 Points Forts
-
-### Performance
-- ⚡ **ASGI natif** - Performance maximale avec async
-- ⚡ **Cache intelligent** - Dépendances et templates cachés
-- ⚡ **Lazy loading** - Import à la demande
-- ⚡ **Registry O(1)** - Résolution de routes ultra-rapide
-
-### Développement
-- 🎯 **Type safety** - Type hints partout
-- 🎯 **Auto-completion** - IDE support optimal
-- 🎯 **Hot reload** - Développement rapide
-- 🎯 **Debugging** - Messages d'erreur clairs
-
-### Production
-- 🔒 **Sécurité** - CORS, rate limiting, headers
-- 🔒 **Scalabilité** - Architecture modulaire
-- 🔒 **Monitoring** - Logs et métriques
-- 🔒 **Documentation** - OpenAPI auto-générée
-
----
-
-## 📦 Installation
+Commande `microframe` pour rendre des templates depuis le terminal, utile pour la génération de sites statiques.
 
 ```bash
-# Installation via poetry
-poetry add microframe
+# Rendre un template avec un contexte JSON
+microframe render index.html --ctx '{"title": "Accueil"}' --out dist/index.html
 
-# Installation via pip
-pip install microframe
+# Générer tous les templates d'un dossier
+microframe build --templates templates/ --out dist/ --ctx ctx.json
+
+# Lister les templates disponibles
+microframe list
+
+# Vider le cache
+microframe cache clear
 ```
 
-## 🎓 Démarrage Rapide
+**À implémenter :**
+- `microframe/cli.py` basé sur `typer`
+- Commandes : `render`, `build`, `list`, `cache`
+- Chargement du contexte depuis fichier JSON ou stdin
+- Rapport de génération (nb fichiers, temps total)
+
+---
+
+## Utilitaires de test (v2.4)
+
+Helpers pour tester les templates sans serveur web.
 
 ```python
-from microframe import Application
+from microframe.testing import TemplateTestCase
 
-app = Application(title="Mon API", version="1.0.0")
+class TestCard(TemplateTestCase):
+    engine = TemplateEngine(directory="tests/templates")
 
-@app.get("/")
-async def index():
-    return {"message": "Hello, MicroFrame!"}
+    async def test_renders_title(self):
+        html = await self.render("components/card.html", {"title": "Test", "slot": ""})
+        self.assertIn("Test", html)
 
-@app.get("/users/{user_id}")
-async def get_user(user_id: int):
-    return {"user_id": user_id, "name": f"User {user_id}"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    async def test_component_slot(self):
+        html = await self.render_component("card", title="Hello", slot="<p>Content</p>")
+        self.assertIn("<p>Content</p>", html)
 ```
 
----
-
-## 📚 Documentation
-
-- 📖 [Architecture](ARCHITECTURE.md) - Architecture détaillée du framework
-- 📖 [Migration Guide](MIGRATION_GUIDE.md) - Guide de migration v1 → v2
-- 📖 [Refactoring Summary](REFACTORING_SUMMARY.md) - Résumé des changements
-- 📖 [Examples](../examples/) - Exemples d'applications complètes
+**À implémenter :**
+- `TemplateTestCase` dans `microframe/testing.py`
+- Méthodes : `render()`, `render_component()`, `assertContains()`, `assertNotContains()`
+- Fixture `engine` overridable par test
 
 ---
 
-**Version**: 2.0.0  
-**Python**: 3.13+  
-**License**: MIT  
-**Repository**: [traoreera/microframe](https://github.com/traoreera/microframe)
+## Génération de site statique / SSG (v2.5)
+
+Rendre un ensemble de pages en fichiers HTML statiques à partir d'une configuration.
+
+```python
+from microframe.ssg import StaticGenerator
+
+gen = StaticGenerator(engine, output_dir="dist/")
+
+gen.add_page("index.html",  ctx={"title": "Accueil"},  output="index.html")
+gen.add_page("about.html",  ctx={"title": "À propos"}, output="about.html")
+
+# Pages dynamiques depuis une liste
+gen.add_collection(
+    template="post.html",
+    items=posts,           # liste de dicts
+    output=lambda item: f"posts/{item['slug']}.html",
+)
+
+await gen.build()
+# → dist/index.html, dist/about.html, dist/posts/mon-article.html ...
+```
+
+**À implémenter :**
+- `StaticGenerator` dans `microframe/ssg.py`
+- `add_page()`, `add_collection()`, `build()`
+- Copie des assets statiques vers `dist/`
+- Rapport de build (pages générées, erreurs, durée)

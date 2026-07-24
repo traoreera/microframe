@@ -1,33 +1,30 @@
 """
-MicroFrame - A modern ASGI microframe
+MicroFrame — Moteur de rendu Jinja2
 
-Example:
-```python
-    from microframe import Application, Router, AppConfig
-    from microframe.dependencies import Depends
-    
-    app = Application(title="My API", version="1.0.0")
-    
-    @app.get("/")
-    async def index():
-        return {"message": "Hello World"}
-```
+Usage:
+    from microframe import TemplateEngine
+
+    engine = TemplateEngine(directory="templates")
+    html = await engine.render("index.html", {"title": "Accueil"})
 """
 
-from starlette.requests import Request
-
-from microframe.core.application import Application
-from microframe.core.config import AppConfig
-from microframe.dependencies.manager import DependencyManager, Depends
-from microframe.exceptions.exception import *
-from microframe.routing.router import RouteInfo, Router
+from microframe.engine.cache import CacheBackend, CacheManager
+from microframe.engine.components import (ComponentRegistry,
+                                          auto_register_components)
+from microframe.engine.core import TemplateEngine
+from microframe.engine.mfe import MFEClient
+from microframe.engine.ui import Component as UIComponent
+from microframe.engine.ui import register as ui_register
+from microframe.engine.ui import render_microui
 
 __all__ = [
-    "Application",
-    "AppConfig",
-    "Router",
-    "RouteInfo",
-    "Request",
-    "DependencyManager",
-    "Depends",
+    "TemplateEngine",
+    "MFEClient",
+    "CacheManager",
+    "CacheBackend",
+    "ComponentRegistry",
+    "auto_register_components",
+    "UIComponent",
+    "ui_register",
+    "render_microui",
 ]

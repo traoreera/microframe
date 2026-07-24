@@ -37,8 +37,6 @@ ENV/
 
 # Environment
 .env
-.env.local
-.env.*.local
 
 # Testing
 .pytest_cache/
@@ -46,25 +44,6 @@ ENV/
 htmlcov/
 *.cover
 
-# Logs
-*.log
-logs/
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
 # OS
 .DS_Store
 Thumbs.db
-
-
-#other
-.ecommerce/
-templates/
-app
-main.py
-coverage.xml
-GEMINI.md
-ROADMAP.md
