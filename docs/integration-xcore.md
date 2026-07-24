@@ -1,8 +1,8 @@
 # Intégration XCore
 
-Commence par `guide.md` si tu veux voir le flux de base, puis reviens ici pour brancher MicroFrame sur FastAPI et XCore.
-
 XCore est un framework de plugins pour FastAPI. MicroFrame peut s'y intégrer pour utiliser les plugins comme backends pour les tags `<remote>` et `<action>`.
+
+→ **Guide complet avec plugin pas à pas** : [xcore-avec-plugin](xcore-avec-plugin.md)
 
 ## Installation
 
@@ -74,21 +74,11 @@ Sert automatiquement `templates/static/` si le dossier existe.
 
 ## Cache
 
-```python
-class XCoreCacheBackend(CacheBackend):
-    """Bridge entre microframe et le cache xcore."""
-```
-
-Utilisé automatiquement par `create_xcore_engine` si xcore dispose d'un service de cache.
+`XCoreCacheBackend` fait le pont entre le cache microframe et le `CacheService` de xcore. Utilisé automatiquement par `create_xcore_engine` si xcore dispose d'un service de cache.
 
 ## Helper static
 
-```python
-class XCoreStatic:
-    """Builds static URLs with mount prefix and asset versioning."""
-
-engine.add_global("static", XCoreStatic(mount_prefix="/static"))
-```
+`XCoreStatic` construit des URLs avec préfixe de montage et versionnement d'assets.
 
 ```html
 <link rel="stylesheet" href="{{ static('app.css') }}">

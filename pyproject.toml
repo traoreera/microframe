@@ -22,8 +22,7 @@ mypy = "^1.9.0"
 isort = "^7.0.0"
 pytest-cov = "^7.0.0"
 
-[tool.poetry.extras]
-xcore = ["fastapi"]
+
 
 [tool.poetry.scripts]
 microframe = "microframe.cli:main"
