@@ -76,6 +76,10 @@ class ActionExtension(Extension):
         htmx = self._build_htmx(kwargs)
         token = escape(csrf_fn() if csrf_fn else "")
 
+        if kwargs.get("hx_post") or kwargs.get("hx_get"):
+            hx_verb = "hx-get" if kwargs.get("hx_get") else "hx-post"
+            htmx += f' {hx_verb}="{url}"'
+
         body = await caller()
         parts = [f'<form action="{url}" method="{method}"{htmx}>']
         parts.append(f'<input type="hidden" name="csrf_token" value="{token}">')
