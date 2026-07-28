@@ -3,19 +3,15 @@
 ## Quick start
 
 ```bash
-# Install (Poetry is the build system; uv.lock also tracked)
 make install
 # or: poetry install
-
-# Run the example (must be run from example/ dir)
-cd example && python run.py
 ```
 
 ## Dev commands
 
 ```bash
 poetry run pytest                    # all tests (asyncio_mode=auto)
-poetry run pytest tests/test_foo.py  # single file
+poetry run pytest tests/test_microframe_risks.py  # single file
 poetry run black --check .           # format check (line-length=100)
 poetry run isort --check .           # import sort
 poetry run flake8 microframe/        # lint
@@ -33,6 +29,10 @@ Single-package Python library (`microframe`, v2.0.0). Public API exported from `
 - `UIComponent` / `ui_register` / `render_microui` — Python class-based UI component system (`microframe/engine/ui/`)
 
 All rendering is async (`await engine.render(...)`).
+
+### CLI
+
+Available as `microframe` after install (`microframe.cli:main`). Commands: `render`, `build`, `scaffold`.
 
 ### UI components (`microframe/engine/ui/`)
 
@@ -55,14 +55,12 @@ class Alert(UIComponent):
 ## Known issues
 
 - **CI is broken** — `.github/workflows/pyproject.yml` runs `pip install -e .[dev]` but this project uses Poetry (needs `poetry install` or `pip install poetry`)
-- **No tests directory** — `testpaths = ["tests"]` in `pyproject.toml` but `tests/` does not exist yet
 - **Discrepancies**: `pyproject.toml` requires `python = "^3.13"` but `mypy.python_version = "3.9"` is stale; `uv.lock` says `requires-python = ">=3.14"`
 - **Both `poetry.lock` and `uv.lock`** are tracked — prefer Poetry unless uv is explicitly requested
 
 ## Key files
 
-- `FEATURES.md` — roadmap of planned features (context processors, i18n, CLI, SSG, etc.) — not yet implemented
-- `example/run.py` — integration-style manual test (chdirs to `example/` at runtime)
+- `FEATURES.md` — roadmap of planned features (context processors, i18n, SSG, etc.) — not yet implemented
 - `microframe/engine/core/environment.py` — Jinja2 environment setup (filters, globals, components)
 
 ## Style
