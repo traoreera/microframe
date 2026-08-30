@@ -60,6 +60,14 @@ class ComponentExtensions(Extension):
         return self._convert(source)
 
     def _convert(self, source: str) -> str:
+        def as_bare_expr(value: str) -> str:
+            # A prop written as `title="{{ page.title }}"` must become the
+            # BARE expression `title=page.title` inside `{% component %}` —
+            # `{{ }}` is Jinja2's PRINT syntax, invalid inside a `{% %}`
+            # statement tag (`title={{ page.title }}` is a syntax error).
+            v = value.strip()
+            return v[2:-2].strip() if v.startswith("{{") and v.endswith("}}") else v
+
         def parse_props(props_str: str) -> str:
             props = []
             for match in re.findall(
@@ -68,11 +76,11 @@ class ComponentExtensions(Extension):
                 key = match[0]
                 if match[1]:
                     props.append(
-                        f'{key}="{match[1]}"' if "{{" not in match[1] else f"{key}={match[1]}"
+                        f'{key}="{match[1]}"' if "{{" not in match[1] else f"{key}={as_bare_expr(match[1])}"
                     )
                 elif match[2]:
                     props.append(
-                        f'{key}="{match[2]}"' if "{{" not in match[2] else f"{key}={match[2]}"
+                        f'{key}="{match[2]}"' if "{{" not in match[2] else f"{key}={as_bare_expr(match[2])}"
                     )
                 elif match[3]:
                     props.append(f"{key}={match[3]}")

@@ -9,7 +9,9 @@ from markupsafe import Markup
 
 from ..cache import CacheManager
 from ..components import (ComponentExtension, ComponentExtensions,
-                          auto_register_components)
+                          UIComponentExtension, UIComponentPreprocessor,
+                          UIVarsExtension, auto_register_components,
+                          auto_register_ui_components)
 from ..filters import (filter_currency, filter_json_pretty, filter_slugify,
                        filter_timeago, filter_truncate)
 from ..globals import breadcrumbs, generate_csrf_token, paginate
@@ -54,11 +56,13 @@ def build_environment(
     directories: List[str] = [directory] if isinstance(directory, str) else list(directory)
     for d in directories:
         auto_register_components(f"{d}/components")
+        auto_register_ui_components(f"{d}/ui")
 
     loader: jinja2.BaseLoader = jinja2.FileSystemLoader(directories)
     if namespaces:
         for name, ns_dir in namespaces.items():
             auto_register_components(f"{ns_dir}/components")
+            auto_register_ui_components(f"{ns_dir}/ui")
         loader = jinja2.ChoiceLoader(
             [
                 loader,
@@ -82,6 +86,9 @@ def build_environment(
     env = jinja2.Environment(**options)  # type: ignore
     env.add_extension(ComponentExtension)
     env.add_extension(ComponentExtensions)
+    env.add_extension(UIVarsExtension)
+    env.add_extension(UIComponentExtension)
+    env.add_extension(UIComponentPreprocessor)
     env.add_extension(RemoteExtension)
     env.add_extension(ActionExtension)
     env.add_extension(HtmlRemoteActionExtension)
