@@ -10,7 +10,9 @@ Usage:
 
 from microframe.engine.cache import CacheBackend, CacheManager
 from microframe.engine.components import (ComponentRegistry,
-                                          auto_register_components)
+                                          UIComponentRegistry,
+                                          auto_register_components,
+                                          auto_register_ui_components)
 from microframe.engine.core import TemplateEngine
 from microframe.engine.mfe import MFEClient
 from microframe.engine.ui import Component as UIComponent
@@ -24,6 +26,8 @@ __all__ = [
     "CacheBackend",
     "ComponentRegistry",
     "auto_register_components",
+    "UIComponentRegistry",
+    "auto_register_ui_components",
     "UIComponent",
     "ui_register",
     "render_microui",
