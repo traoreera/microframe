@@ -199,10 +199,10 @@ class UIComponentExtension(Extension):
             self.call_method("_render_async", [component_name], props), [], [], body
         ).set_lineno(lineno)
 
-    async def _render_async(self, name: str, caller, **props):
-        template = UIComponentRegistry.get(name)
+    async def _render_async(self, component_name: str, caller, **props):
+        template = UIComponentRegistry.get(component_name)
         if not template:
-            return f"<!-- UI component '{name}' not found -->"
+            return f"<!-- UI component '{component_name}' not found -->"
         try:
             slot_content = await caller()
             slot = Markup(slot_content) if slot_content else Markup("")
@@ -215,7 +215,7 @@ class UIComponentExtension(Extension):
             import traceback
 
             traceback.print_exc()
-            return f"<!-- Error rendering ui component '{name}': {e} -->"
+            return f"<!-- Error rendering ui component '{component_name}': {e} -->"
 
 
 class UIComponentPreprocessor(Extension):
@@ -317,9 +317,14 @@ class UIComponentPreprocessor(Extension):
 
     @classmethod
     def _convert(cls, source: str) -> str:
-        # Self-closing : <ui.name attr="v" />
+        # Self-closing : <ui.name attr="v" />. Jamais `[^/]*` ici : l'attribut
+        # d'un <ui.x> ne peut pas contenir de `<`/`>` (c'est du texte HTML),
+        # et autoriser le premier `/` en traversant donnerait — littéralement —
+        # `<ui.label>...<ui.input .../>` : la regex partirait du `<ui.label>`
+        # pour se fermer sur le `/>` du `ui.input` imbriqué, avalant les props
+        # du composant enfant dans celui du parent (bug réel observé dans xui).
         source = re.sub(
-            r"<ui\.(\w+)([^/]*)/>",
+            r"<ui\.(\w+)([^<>]*)/>",
             lambda m: f'{{% uicomponent "{m.group(1)}"{cls._parse_props(m.group(2))} %}}{{% enduicomponent %}}',
             source,
         )

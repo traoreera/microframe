@@ -11,7 +11,8 @@ rewritten to emit real `Assign` nodes instead of an opaque method call.
 import jinja2
 import pytest
 
-from microframe.engine.components.extension import ComponentExtensions
+from microframe.engine.components.extension import ComponentExtension, ComponentExtensions
+from microframe.engine.components.registry import ComponentRegistry
 from microframe.engine.components.ui_kit import (
     UIComponentExtension,
     UIComponentPreprocessor,
@@ -112,3 +113,71 @@ def test_component_extensions_expression_attr_regression():
 def test_ui_component_preprocessor_self_closing_expression_attr():
     out = UIComponentPreprocessor._convert('<ui.badge text="{{ page.title }}" />')
     assert out == '{% uicomponent "badge" text=page.title %}{% enduicomponent %}'
+
+
+def test_self_closing_in_block_does_not_cross_open_tag():
+    """`<ui.label>...<ui.input .../></ui.label>` : le `[^<>]*` de la regex
+    self-closing s'arrête au `>` du `<ui.label>`, sinon le `/>` du composant
+    enfant Imbriqué avale les props de l'enfant dans le parent (et le
+    `</ui.label>` fermant finissait littéral dans la sortie)."""
+    out = UIComponentPreprocessor._convert(
+        '<ui.label>Email\n'
+        '<ui.input name="email" type="email" required="true" />\n'
+        "</ui.label>"
+    )
+    assert out == (
+        '{% uicomponent "label" %}Email\n'
+        '{% uicomponent "input" name="email" type="email" required="true" %}{% enduicomponent %}\n'
+        "{% enduicomponent %}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_nested_self_closing_renders_inside_block(env):
+    UIComponentRegistry.register(
+        "input",
+        '{% uivars name="" %}<input name="{{ name }}" {{ attrs }}>',
+    )
+    UIComponentRegistry.register(
+        "label",
+        '{% uivars for_="" %}<label {% if for_ %}for="{{ for_ }}"{% endif %} {{ attrs }}>'
+        "{{ slot }}</label>",
+    )
+    out = await _render(
+        env,
+        '<ui.label>Email\n<ui.input name="email" required="true" />\n</ui.label>',
+    )
+    assert out == '<label  >Email\n<input name="email" required="true">\n</label>'
+
+
+def test_ui_component_preprocessor_keeps_htmx_attrs_separate():
+    """`hx-get`, `x-data`, `@click`... ne sont pas des identifiants Jinja2 :
+    le préprocesseur les isole dans `__raw_attrs` au lieu de les perdre."""
+    out = UIComponentPreprocessor._convert(
+        '<ui.submit hx-post="/contacts/new" hx-target="#panel" id="go" data-testid="t1">'
+        "Go</ui.submit>"
+    )
+    assert out == (
+        '{% uicomponent "submit" id="go" __raw_attrs={'
+        '"hx-post": "/contacts/new", "hx-target": "#panel", "data-testid": "t1"}'
+        " %}Go{% enduicomponent %}"
+    )
+
+
+def test_plain_component_syntax_passes_htmx_attrs():
+    """Même mécanisme côté `<component.x>` — la syntaxe hérite aussi du
+    support htmx : les noms non identifiants (`hx-*`, `data-*`, Alpine...)
+    sont rendus via `attrs`. Les props identifiants (`id`, `color`...) restent
+    des kwargs que le template référence explicitement (sémantique du système
+    simple, inchangée)."""
+    env = jinja2.Environment(enable_async=True)
+    env.add_extension(ComponentExtension)
+    env.add_extension(ComponentExtensions)
+    ComponentRegistry.register(
+        "row",
+        '<button {{ attrs }}>{{ slot }}</button>',
+    )
+    out = env.from_string(
+        '<component.row hx-post="/rows" hx-target="#tbody" data-row-id="r1">Go</component.row>'
+    ).render()
+    assert out == '<button hx-post="/rows" hx-target="#tbody" data-row-id="r1">Go</button>'
